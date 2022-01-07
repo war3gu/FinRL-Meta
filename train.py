@@ -1,4 +1,5 @@
-from drl_agents.elegantrl_models import DRLAgent as DRLAgent_erl
+# only exposing erl models directly for now
+from models.erl_models import DRLAgent as DRLAgent_erl
 from drl_agents.rllib_models import DRLAgent as DRLAgent_rllib
 from drl_agents.stablebaselines3_models import DRLAgent as DRLAgent_sb3
 from finrl_meta.data_processor import DataProcessor
