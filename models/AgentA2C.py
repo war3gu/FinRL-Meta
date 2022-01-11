@@ -1,6 +1,6 @@
 import torch
-from AgentPPO import AgentPPO, AgentSharePPO
-from net import ActorDiscretePPO
+from .AgentPPO import AgentPPO, AgentSharePPO
+from .net import ActorDiscretePPO
 
 
 class AgentA2C(AgentPPO):  # A2C.2015, PPO.2016

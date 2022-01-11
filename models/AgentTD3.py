@@ -1,6 +1,6 @@
 import torch
-from AgentBase import AgentBase
-from net import Actor, CriticTwin
+from .AgentBase import AgentBase
+from .net import Actor, CriticTwin
 
 
 class AgentTD3(AgentBase):

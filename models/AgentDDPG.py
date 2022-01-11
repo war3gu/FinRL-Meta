@@ -2,8 +2,8 @@ import torch
 import numpy as np
 import numpy.random as rd
 from typing import Tuple
-from AgentBase import AgentBase
-from net import Actor, Critic
+from .AgentBase import AgentBase
+from .net import Actor, Critic
 
 
 class AgentDDPG(AgentBase):

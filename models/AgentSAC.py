@@ -2,8 +2,8 @@ import torch
 import numpy as np
 import numpy.random as rd
 from copy import deepcopy
-from AgentBase import AgentBase
-from net import ActorSAC, CriticTwin, ShareSPG, CriticMultiple
+from .AgentBase import AgentBase
+from .net import ActorSAC, CriticTwin, ShareSPG, CriticMultiple
 
 
 class AgentSAC(AgentBase):  # [ElegantRL.2021.11.11]

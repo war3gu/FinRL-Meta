@@ -1,6 +1,6 @@
 from finrl_meta.data_processors.processor_alpaca import AlpacaProcessor as Alpaca
-from finrl_meta.data_processors.processor_wrds import WrdsProcessor as Wrds
-from finrl_meta.data_processors.processor_yahoofinance import YahooFinanceProcessor as YahooFinance
+#from finrl_meta.data_processors.processor_wrds import WrdsProcessor as Wrds
+#from finrl_meta.data_processors.processor_yahoofinance import YahooFinanceProcessor as YahooFinance
 from finrl_meta.data_processors.processor_binance import BinanceProcessor as Binance
 from finrl_meta.data_processors.processor_ricequant import RiceQuantProcessor as RiceQuant
 from finrl_meta.data_processors.processor_joinquant import JoinquantProcessor
@@ -8,9 +8,11 @@ from finrl_meta.data_processors.processor_tusharepro import TushareProProcessor 
 import pandas as pd
 import numpy as np
 import os
+import warnings
 
 class DataProcessor():
     def __init__(self, data_source, **kwargs):
+        self.customf = kwargs.get('customf')
         self.data_source = data_source
         if self.data_source == 'alpaca':
             try:
@@ -79,7 +81,28 @@ class DataProcessor():
         self.tech_indicator_list = tech_indicator_list
         df = self.processor.add_technical_indicator(df, tech_indicator_list)
 
-        return df
+        if self.customf != False:
+            #process
+            ffolder = os.path.join(os.getcwd(), 'features')
+            if type(self.customf) == str:
+                # specific file
+                features = pd.read_csv(os.path.join(ffolder,self.customf))
+            else:
+                # use first csv found
+                csv_files = list(filter(lambda f: f.endswith('.csv'), os.listdir(ffolder)))
+                fname = csv_files[0]
+                features = pd.read_csv(os.path.join(ffolder,fname))
+            
+            inds = features.columns[1:-1]
+            self.tech_indicator_list += inds.to_list()
+            unique_ticker = features.tic.unique()
+            merged = df.merge(features, how = 'inner', on = ['time', 'tic'])
+            #tech_array = np.hstack([features.loc[(features.tic==tic), inds] for tic in unique_ticker])
+            if df.shape[0] > features.shape[0]:
+                warnings.warn("custom feature set smaller than current data \n using subset of data that matches size of custom features")
+
+        print("Succesfully added custom technical indicators")
+        return merged
     
     def add_turbulence(self, df) -> pd.DataFrame:
         df = self.processor.add_turbulence(df)

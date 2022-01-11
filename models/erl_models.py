@@ -1,10 +1,11 @@
 # RL models from elegantrl
 import torch
-import AgentDDPG
-import AgentPPO
-import AgentSAC
-import AgentTD3
-import AgentA2C
+from .AgentDDPG import AgentDDPG
+from .AgentPPO import AgentPPO
+from .AgentSAC import AgentSAC
+from .AgentTD3 import AgentTD3
+from .AgentA2C import AgentA2C
+
 from elegantrl.train.config import Arguments
 from elegantrl.train.run_tutorial import train_and_evaluate
 

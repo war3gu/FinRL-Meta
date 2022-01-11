@@ -1,8 +1,8 @@
 import torch
 import numpy as np
 from typing import Tuple
-from AgentBase import AgentBase
-from net import ActorPPO, CriticPPO, ActorDiscretePPO, SharePPO
+from .AgentBase import AgentBase
+from .net import ActorPPO, CriticPPO, ActorDiscretePPO, SharePPO
 
 '''[ElegantRL.2021.12.12](github.com/AI4Fiance-Foundation/ElegantRL)'''
 
@@ -222,7 +222,7 @@ class AgentPPO(AgentBase):
         a_std_log = getattr(self.act, 'a_std_log', torch.zeros(1)).mean()
         return obj_critic.item(), obj_actor.item(), a_std_log.item()  # logging_tuple
 
-    def get_reward_sum_raw(self, buf_len, buf_reward, buf_mask, buf_value) -> Tuple[torch.Tensor, torch.Tensor]:
+    def get_reward_sum_raw(self, buf_len, buf_reward, buf_mask, buf_value) -> (torch.Tensor, torch.Tensor):
         """
         Calculate the **reward-to-go** and **advantage estimation**.
 
