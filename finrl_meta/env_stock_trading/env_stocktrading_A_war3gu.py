@@ -38,7 +38,9 @@ class StockTradingEnv(gym.Env):
                 mode='',                          
                 iteration='',                      
                 initial_buy=False,                   # Use half of initial amount to buy
-                hundred_each_trade=True):            # The number of shares per lot must be an integer multiple of 100
+                hundred_each_trade=True,
+                out_of_cash_penalty=0.01,
+                cash_limit=0.1):            # The number of shares per lot must be an integer multiple of 100
 
         self.day = day                               
         self.df = df                                 
@@ -66,6 +68,8 @@ class StockTradingEnv(gym.Env):
         # initalize state
         self.initial_buy = initial_buy
         self.hundred_each_trade = hundred_each_trade
+        self.out_of_cash_penalty = out_of_cash_penalty
+        self.cash_limit = cash_limit
         self.state = self._initiate_state()
         
         # initialize reward
@@ -75,7 +79,8 @@ class StockTradingEnv(gym.Env):
         self.trades = 0                           
         self.episode = 0                                                 
         # memorize all the total balance change
-        self.asset_memory = [self.initial_amount]   
+        self.asset_memory = [self.initial_amount]  #总资产
+        self.cash_memory  = [self.initial_amount]  #现金
         self.rewards_memory = []                 
         self.actions_memory=[]                       
         self.date_memory=[self._get_date()]
@@ -187,12 +192,18 @@ class StockTradingEnv(gym.Env):
 
             end_total_asset = self.state[0]+ \
                 sum(np.array(self.state[1:(self.stock_dim+1)])*np.array(self.state[(self.stock_dim+1):(self.stock_dim*2+1)]))   
-            df_total_value = pd.DataFrame(self.asset_memory)   
+            df_total_value = pd.DataFrame(self.asset_memory)
+            df_cash        = pd.DataFrame(self.cash_memory)
             tot_reward = self.state[0]+sum(np.array(self.state[1:(self.stock_dim+1)])*np.array(self.state[(self.stock_dim+1):(self.stock_dim*2+1)]))- self.initial_amount 
-            df_total_value.columns = ['account_value']  
+
+            df_total_value.columns = ['account_value']
             df_total_value['date'] = self.date_memory   
-            df_total_value['daily_return']=df_total_value['account_value'].pct_change(1)  
-            if df_total_value['daily_return'].std() !=0:    
+            df_total_value['daily_return']=df_total_value['account_value'].pct_change(1)
+
+            df_cash.columns = ['cash_value']
+            df_cash['date'] = self.date_memory
+
+            if df_total_value['daily_return'].std() !=0:
                 sharpe = (252**0.5)*df_total_value['daily_return'].mean()/ \
                       df_total_value['daily_return'].std()
             df_rewards = pd.DataFrame(self.rewards_memory)  
@@ -213,6 +224,7 @@ class StockTradingEnv(gym.Env):
                 df_actions = self.save_action_memory()
                 df_actions.to_csv('results/actions_{}_{}_{}.csv'.format(self.mode,self.model_name, self.iteration))
                 df_total_value.to_csv('results/account_value_{}_{}_{}.csv'.format(self.mode,self.model_name, self.iteration),index=False)
+                df_cash.to_csv('results/cash_value_{}_{}_{}.csv'.format(self.mode,self.model_name, self.iteration),index=False)
                 df_rewards.to_csv('results/account_rewards_{}_{}_{}.csv'.format(self.mode,self.model_name, self.iteration),index=False)
                 plt.plot(self.asset_memory,'r')
                 plt.savefig('results/account_value_{}_{}_{}.png'.format(self.mode,self.model_name, self.iteration),index=False)
@@ -266,11 +278,14 @@ class StockTradingEnv(gym.Env):
                     i_list.append(i)               
             end_total_asset = self.state[0]+ \
             sum(np.array(self.state[1:(self.stock_dim+1)])*np.array(self.state[(self.stock_dim+1):(self.stock_dim*2+1)])) 
-            self.asset_memory.append(end_total_asset)                 
+            self.asset_memory.append(end_total_asset)
+            self.cash_memory.append(self.state[0])
             self.date_memory.append(self._get_date())                  
             self.reward = end_total_asset - begin_total_asset                #总资产差就是reward
             for i in i_list:
                 self.reward -= self.state[i+1]*self.state[self.stock_dim+1+i]*0.01    #清仓股票需要惩罚
+            if self.state[0] < self.initial_amount*self.cash_limit:    #如果金钱太少，需要进行惩罚，否则在训练的时候因为没钱导致探索空间不够，，训练出来的AI像个傻子，test可以把限制去掉。
+                self.reward -= self.initial_amount*self.out_of_cash_penalty
             self.rewards_memory.append(self.reward)
             self.reward = self.reward*self.reward_scaling
 
@@ -282,11 +297,13 @@ class StockTradingEnv(gym.Env):
         self.state = self._initiate_state()                 
         
         if self.initial:
-            self.asset_memory = [self.initial_amount]        
+            self.asset_memory = [self.initial_amount]
+            self.cash_memory  = [self.initial_amount]
         else:
             previous_total_asset = self.previous_state[0]+ \
             sum(np.array(self.state[1:(self.stock_dim+1)])*np.array(self.previous_state[(self.stock_dim+1):(self.stock_dim*2+1)]))
-            self.asset_memory = [previous_total_asset]      
+            self.asset_memory = [previous_total_asset]
+            self.cash_memory  = [self.previous_state[0]]
         self.day = 0                                        
         self.data = self.df.loc[self.day,:]                 
         self.turbulence = 0                             

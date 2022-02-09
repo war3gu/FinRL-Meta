@@ -68,6 +68,7 @@ ts_processor.clean_data()
 
 
 if __name__ == "__main__":
+    __spec__ = "ModuleSpec(name='builtins', loader=<class '_frozen_importlib.BuiltinImporter'>)"
     train = ts_processor.data_split(ts_processor.dataframe, train_start_date, train_stop_date)
     trade = ts_processor.data_split(ts_processor.dataframe, val_start_date, val_stop_date)
 
@@ -85,7 +86,7 @@ if __name__ == "__main__":
 
     env_kwargs_train = {
         "stock_dim": stock_dimension,
-        "hmax": 10000,
+        "hmax": 1000,
         "initial_amount": 1000000,
         "buy_cost_pct": 6.87e-5,
         "sell_cost_pct": 1.0687e-3,
@@ -95,7 +96,9 @@ if __name__ == "__main__":
         "tech_indicator_list": config.TECHNICAL_INDICATORS_LIST,
         "print_verbosity": 1,
         "initial_buy": True,
-        "hundred_each_trade": True
+        "hundred_each_trade": True,
+        "out_of_cash_penalty": 0.002,
+        "cash_limit": 0.2
     }
     DDPG_PARAMS = {
         "batch_size": 1024,  # 一个批次训练的样本数量
@@ -113,7 +116,7 @@ if __name__ == "__main__":
         total_timesteps = 5000  # 总的采样次数,不能太少
         env_kwargs_train = {
             "stock_dim": stock_dimension,
-            "hmax": 10000,
+            "hmax": 1000,
             "initial_amount": 1000000,
             "buy_cost_pct": 6.87e-5,
             "sell_cost_pct": 1.0687e-3,
@@ -123,7 +126,9 @@ if __name__ == "__main__":
             "tech_indicator_list": config.TECHNICAL_INDICATORS_LIST,
             "print_verbosity": 1,
             "initial_buy": True,
-            "hundred_each_trade": True
+            "hundred_each_trade": True,
+            "out_of_cash_penalty": 0.002,
+            "cash_limit": 0.2
         }
 
         DDPG_PARAMS = {
@@ -161,7 +166,7 @@ if __name__ == "__main__":
 
     env_kwargs_test = {
         "stock_dim": stock_dimension,
-        "hmax": 10000,
+        "hmax": 1000,
         "initial_amount": 1000000,
         "buy_cost_pct": 6.87e-5,
         "sell_cost_pct": 1.0687e-3,
@@ -171,7 +176,11 @@ if __name__ == "__main__":
         "tech_indicator_list": config.TECHNICAL_INDICATORS_LIST,
         "print_verbosity": 1,
         "initial_buy": False,
-        "hundred_each_trade": True
+        "hundred_each_trade": True,
+        "out_of_cash_penalty": 0.002,
+        "cash_limit": 0.2,
+        "model_name":"stock_a",
+        "mode":"trade"
     }
 
     e_trade_gym = StockTradingEnv(df=trade, **env_kwargs_test)
@@ -179,6 +188,7 @@ if __name__ == "__main__":
     df_account_value, df_actions = DRLAgent.DRL_prediction(model=model_ddpg_after_train, environment=e_trade_gym)
     print("end test")
     df_actions.to_csv("action.csv", index=False)
+    df_account_value.to_csv("account.csv", index=False)
 
     print("game end")
 
