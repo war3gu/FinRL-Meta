@@ -20,6 +20,9 @@ pd.options.display.max_columns = None
 
 import pyfolio
 from pyfolio import timeseries
+
+import multiprocessing
+import platform
     
 print("ALL Modules have been imported!")
 
@@ -51,6 +54,9 @@ val_start_date='2019-08-01'
 val_stop_date='2021-01-03'
 
 token='27080ec403c0218f96f388bca1b1d85329d563c91a43672239619ef5'
+
+
+
 
 
 # download and clean
@@ -86,46 +92,90 @@ print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
 
 
 # ### Train
-env_kwargs = {
+
+total_timesteps = 200000            #总的采样次数,不能太少
+
+env_kwargs_train = {
     "stock_dim": stock_dimension,
-    "hmax": 1000, 
-    "initial_amount": 1000000, 
+    "hmax": 10000,
+    "initial_amount": 1000000,
     "buy_cost_pct":6.87e-5,
     "sell_cost_pct":1.0687e-3,
     "reward_scaling": 1e-4,
-    "state_space": state_space, 
+    "state_space": state_space,
     "action_space": stock_dimension,
-    "tech_indicator_list": config.TECHNICAL_INDICATORS_LIST, 
+    "tech_indicator_list": config.TECHNICAL_INDICATORS_LIST,
     "print_verbosity": 1,
     "initial_buy":True,
     "hundred_each_trade":True
 }
-
-e_train_gym = StockTradingEnv(df=train, **env_kwargs)
-env_train, _ = e_train_gym.get_sb_env()
-agent = DRLAgent(env = env_train)
 DDPG_PARAMS = {
-    "batch_size": 256,            #一个批次训练的样本数量
-    "buffer_size": 50000,
+    "batch_size": 1024,             #一个批次训练的样本数量
+    "buffer_size": 300000,
     "learning_rate": 0.0005,
     "action_noise":"normal",
-    "gradient_steps":2000,        #一共训练多少个批次
-    "policy_delay":4              #critic训练多少次才训练actor一次
+    "gradient_steps":2000,         #一共训练多少个批次
+    "policy_delay":2,              #critic训练多少次才训练actor一次
+    "train_freq":(20000, "step")    #采样多少次训练一次
 }
 
-total_timesteps = 10000            #总的采样次数,不能太少
+POLICY_KWARGS = dict(net_arch=dict(pi=[128, 128], qf=[800, 600]))
 
-POLICY_KWARGS = dict(net_arch=dict(pi=[64, 64], qf=[400, 300]))
+
+
+
+#开发参数，小一点
+if platform.system() == 'Windows':
+    total_timesteps = 5000            #总的采样次数,不能太少
+    env_kwargs_train = {
+        "stock_dim": stock_dimension,
+        "hmax": 10000,
+        "initial_amount": 1000000,
+        "buy_cost_pct":6.87e-5,
+        "sell_cost_pct":1.0687e-3,
+        "reward_scaling": 1e-4,
+        "state_space": state_space,
+        "action_space": stock_dimension,
+        "tech_indicator_list": config.TECHNICAL_INDICATORS_LIST,
+        "print_verbosity": 1,
+        "initial_buy":True,
+        "hundred_each_trade":True
+    }
+
+    DDPG_PARAMS = {
+        "batch_size": 256,             #一个批次训练的样本数量
+        "buffer_size": 20000,
+        "learning_rate": 0.0005,
+        "action_noise":"normal",
+        "gradient_steps":500,         #一共训练多少个批次
+        "policy_delay":2,              #critic训练多少次才训练actor一次
+        "train_freq":(1000, "step")    #采样多少次训练一次
+    }
+
+    POLICY_KWARGS = dict(net_arch=dict(pi=[64, 64], qf=[400, 300]))
+
+print("total_timesteps = {0}".format(total_timesteps))
+
+e_train_gym = StockTradingEnv(df=train, **env_kwargs_train)
+
+n_cores = multiprocessing.cpu_count()
+print("core count = {0}".format(n_cores))
+#env_train, _ = e_train_gym.get_sb_env()
+env_train, _ = e_train_gym.get_multiproc_env(n=n_cores)
+agent = DRLAgent(env = env_train)
+
+
+
 model_ddpg_before_train = agent.get_model("td3", model_kwargs=DDPG_PARAMS, policy_kwargs=POLICY_KWARGS)
 print("start train")
-model_ddpg_after_train = agent.train_model(model=model_ddpg_before_train, tb_log_name='ddpg', total_timesteps=total_timesteps)
+model_ddpg_after_train = agent.train_model(model=model_ddpg_before_train, tb_log_name='td3', total_timesteps=total_timesteps)
 print("end train")
 
 
 # ### Test
-env_kwargs = {
+env_kwargs_test = {
     "stock_dim": stock_dimension,
-    "hmax": 1000, 
+    "hmax": 10000,
     "initial_amount": 1000000, 
     "buy_cost_pct":6.87e-5,
     "sell_cost_pct":1.0687e-3,
@@ -137,7 +187,7 @@ env_kwargs = {
     "initial_buy":False,
     "hundred_each_trade":True
 }
-e_trade_gym = StockTradingEnv(df=trade, **env_kwargs)
+e_trade_gym = StockTradingEnv(df=trade, **env_kwargs_test)
 print("start test")
 df_account_value, df_actions = DRLAgent.DRL_prediction(model=model_ddpg_after_train, environment=e_trade_gym)
 print("end test")

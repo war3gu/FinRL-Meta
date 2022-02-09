@@ -7,10 +7,10 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pickle
-from stable_baselines3.common.vec_env import DummyVecEnv
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3.common.logger import Logger as log
 
-
+from copy import deepcopy
 
 
 class StockTradingEnv(gym.Env):
@@ -396,6 +396,13 @@ class StockTradingEnv(gym.Env):
 
     def get_sb_env(self):
         e = DummyVecEnv([lambda: self])
+        obs = e.reset()
+        return e, obs
+
+    def get_multiproc_env(self, n=10):
+        def get_self():
+            return deepcopy(self)
+        e = SubprocVecEnv([get_self for _ in range(n)], start_method=None)  #Only ‘forkserver’ and ‘spawn’ start methods are thread-safe
         obs = e.reset()
         return e, obs
     
