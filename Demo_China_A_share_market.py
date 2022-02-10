@@ -82,7 +82,7 @@ if __name__ == "__main__":
     state_space = stock_dimension * (len(config.TECHNICAL_INDICATORS_LIST) + 2) + 1
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
 
-    total_timesteps = 500000  # 总的采样次数,不能太少
+    total_timesteps = 250000  # 总的采样次数,不能太少
 
     env_kwargs_train = {
         "stock_dim": stock_dimension,
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         "initial_amount": 1000000,
         "buy_cost_pct": 6.87e-5,
         "sell_cost_pct": 1.0687e-3,
-        "reward_scaling": 1e-4,
+        "reward_scaling": 1e-3,
         "state_space": state_space,
         "action_space": stock_dimension,
         "tech_indicator_list": config.TECHNICAL_INDICATORS_LIST,
@@ -98,13 +98,13 @@ if __name__ == "__main__":
         "initial_buy": True,
         "hundred_each_trade": True,
         "out_of_cash_penalty": 0.01,
-        "cash_limit": 0.2,
+        "cash_limit": 0.4,
         "model_name":"stock_a",
         "mode":"train"                  #根据这个来决定是训练还是交易
     }
     DDPG_PARAMS = {
         "batch_size": 1024,  # 一个批次训练的样本数量
-        "buffer_size": 600000,
+        "buffer_size": 300000,
         "learning_rate": 0.0005,
         "action_noise": "normal",
         "gradient_steps": 2000,  # 一共训练多少个批次
@@ -122,7 +122,7 @@ if __name__ == "__main__":
             "initial_amount": 1000000,
             "buy_cost_pct": 6.87e-5,
             "sell_cost_pct": 1.0687e-3,
-            "reward_scaling": 1e-4,
+            "reward_scaling": 1e-3,
             "state_space": state_space,
             "action_space": stock_dimension,
             "tech_indicator_list": config.TECHNICAL_INDICATORS_LIST,
@@ -130,7 +130,7 @@ if __name__ == "__main__":
             "initial_buy": True,
             "hundred_each_trade": True,
             "out_of_cash_penalty": 0.01,
-            "cash_limit": 0.2,
+            "cash_limit": 0.4,
             "model_name":"stock_a",
             "mode":"train"                  #根据这个来决定是训练还是交易
         }
@@ -174,7 +174,7 @@ if __name__ == "__main__":
         "initial_amount": 1000000,
         "buy_cost_pct": 6.87e-5,
         "sell_cost_pct": 1.0687e-3,
-        "reward_scaling": 1e-4,
+        "reward_scaling": 1e-3,
         "state_space": state_space,
         "action_space": stock_dimension,
         "tech_indicator_list": config.TECHNICAL_INDICATORS_LIST,
@@ -182,7 +182,7 @@ if __name__ == "__main__":
         "initial_buy": False,
         "hundred_each_trade": True,
         "out_of_cash_penalty": 0.01,
-        "cash_limit": 0.2,
+        "cash_limit": 0.4,
         "model_name":"stock_a",
         "mode":"test"                  #根据这个来决定是训练还是测试
     }
