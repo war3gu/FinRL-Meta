@@ -323,9 +323,9 @@ class StockTradingEnv(gym.Env):
             self.rewards_memory.append(self.reward)
             self.reward = self.reward*self.reward_scaling
 
-        #if self.mode == "train" and self.state[0] < self.initial_amount*self.out_of_cash_penalty:  #直接结束,这应该是训练的时候可以结束，test的时候不可以结束
-            #print("episode {0} day {1} out of cash".format(self.episode, self.day))
-            #return self.state, -end_total_asset*self.cash_limit, True, {}
+        if self.mode == "train" and self.state[0] < self.initial_amount*self.out_of_cash_penalty:  #直接结束,这应该是训练的时候可以结束，test的时候不可以结束
+            print("episode {0} day {1} out of cash".format(self.episode, self.day))
+            return self.state, -end_total_asset*self.cash_limit, True, {}
 
         return self.state, self.reward, self.terminal, {}
 
