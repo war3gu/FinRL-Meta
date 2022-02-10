@@ -109,7 +109,7 @@ if __name__ == "__main__":
         "action_noise": "normal",
         "gradient_steps": 2000,  # 一共训练多少个批次
         "policy_delay": 2,  # critic训练多少次才训练actor一次
-        "train_freq": (20000, "step")  # 采样多少次训练一次
+        "train_freq": (500, "step")  # 采样多少次训练一次
     }
 
     POLICY_KWARGS = dict(net_arch=dict(pi=[128, 128], qf=[800, 600]))
@@ -142,7 +142,7 @@ if __name__ == "__main__":
             "action_noise": "normal",
             "gradient_steps": 500,  # 一共训练多少个批次
             "policy_delay": 2,  # critic训练多少次才训练actor一次
-            "train_freq": (1000, "step")  # 采样多少次训练一次
+            "train_freq": (500, "step")  # 采样多少次训练一次
         }
 
         POLICY_KWARGS = dict(net_arch=dict(pi=[64, 64], qf=[400, 300]))
