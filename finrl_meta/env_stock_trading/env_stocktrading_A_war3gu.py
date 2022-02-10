@@ -84,6 +84,8 @@ class StockTradingEnv(gym.Env):
         self.rewards_memory = []                 
         self.actions_memory=[]                       
         self.date_memory=[self._get_date()]
+        self.sell_fail_count = 0                   #卖失败次数，需要惩罚
+        self.buy_fail_count  = 0                   #买失败次数，需要惩罚
         self._seed()                               
         
         
@@ -99,6 +101,9 @@ class StockTradingEnv(gym.Env):
                     sell_num_shares = min(abs(action),self.state[index+self.stock_dim+1])          #不能卖空
                     if self.hundred_each_trade:
                         sell_num_shares = sell_num_shares//100*100                                 #100倍数
+
+                    if sell_num_shares == 0:                                                       #卖0股，要惩罚。防止长时间无操作
+                        self.sell_fail_count += 1
 
                     sell_amount = self.state[index+1] * sell_num_shares * (1- self.sell_cost_pct)  #扣除费用，实际获得金额
                     self.state[0] += sell_amount                                                   #更新金额
@@ -150,7 +155,11 @@ class StockTradingEnv(gym.Env):
                 # update balance
                 buy_num_shares = min(available_amount, action)                               #实际能买的数量
                 if self.hundred_each_trade:
-                    buy_num_shares = buy_num_shares//100*100                       
+                    buy_num_shares = buy_num_shares//100*100
+
+                if buy_num_shares == 0:                                                      #买0股，要惩罚。防止长时间无操作
+                    self.buy_fail_count += 1
+
                 buy_amount = self.state[index+1] * buy_num_shares * (1+ self.buy_cost_pct)   #实际花费的金额
                 
              
@@ -183,6 +192,8 @@ class StockTradingEnv(gym.Env):
         plt.close()
 
     def step(self, actions):
+        self.sell_fail_count = 0
+        self.buy_fail_count  = 0
         self.terminal = self.day >= len(self.df.index.unique())-1
         if self.terminal:                              
             print(f"Episode end successful: {self.episode}")
@@ -264,7 +275,7 @@ class StockTradingEnv(gym.Env):
 
             for index in buy_index:
                 actions[index] = self._buy_stock(index, actions[index])
-            self.actions_memory.append(actions)                        
+            self.actions_memory.append(actions)          #此处的action是被处理过的。如果action始终为0也要被惩罚,这属于reword塑形
 
             self.day += 1                                             
             self.data = self.df.loc[self.day,:]                       
@@ -274,7 +285,7 @@ class StockTradingEnv(gym.Env):
 
             i_list=[]
             for i in range(self.stock_dim):
-                if(begin_stock[i]-self.state[self.stock_dim+1+i]==0):        #某只股票清仓
+                if(begin_stock[i]-self.state[self.stock_dim+1+i]==0):        #某只股票数量没有变化
                     i_list.append(i)               
             end_total_asset = self.state[0]+ \
             sum(np.array(self.state[1:(self.stock_dim+1)])*np.array(self.state[(self.stock_dim+1):(self.stock_dim*2+1)])) 
@@ -282,19 +293,39 @@ class StockTradingEnv(gym.Env):
             self.cash_memory.append(self.state[0])
             self.date_memory.append(self._get_date())                  
             self.reward = end_total_asset - begin_total_asset                #总资产差就是reward
-            for i in i_list:
-                self.reward -= self.state[i+1]*self.state[self.stock_dim+1+i]*0.01    #清仓股票需要惩罚
 
-            if self.state[0] < end_total_asset*self.cash_limit:   #如果金钱太少，需要进行惩罚，否则在训练的时候因为没钱导致探索空间不够，，训练出来的AI像个傻子，test可以把限制去掉。
-                self.reward -= self.initial_amount*self.out_of_cash_penalty
+
+            penalty1 = 0
+            penalty2 = 0
+            penalty3 = 0
+            penalty4 = 0
+
+
+            for i in i_list:                                                       #无操作需要惩罚
+                penalty1 += self.state[i+1]*self.state[self.stock_dim+1+i]*0.001    #此处有个bug，一直没有股票，此处的惩罚是0
+
+            if self.state[0] < end_total_asset*self.cash_limit:        #如果金钱太少，需要进行惩罚，否则在训练的时候因为没钱导致探索空间不够，，训练出来的AI像个傻子，test可以把限制去掉。
+                penalty2 = self.initial_amount*self.out_of_cash_penalty*0.1
+
+            penalty3 = end_total_asset*0.00011                         #每天金钱要固定减去一定金额，当做基准利息损失,否则ai会学会什么都不做，0.00011是每天利率
+
+            fail_count = self.sell_fail_count                          #self.buy_fail_count暂时不用,只要金钱留足够就能买
+            if fail_count > 0:                                         #15只股票里有10只无操作,惩罚
+                penalty4 = end_total_asset*0.0001*fail_count             #0.0001是随便给的，需要调整
+
+            self.reward = self.reward - penalty1 - penalty2 - penalty3 - penalty4
+
+            if self.day % 100 == 0:
+                print("episode = {0} day = {1} fail_count = {2} ".format(self.episode, self.day, fail_count))
+                print("reward penalty1234 = {0} {1} {2} {3} {4}".format(self.reward, penalty1, penalty2, penalty3, penalty4))
+
 
             self.rewards_memory.append(self.reward)
             self.reward = self.reward*self.reward_scaling
 
-        if self.mode == "train" and self.state[0] < self.initial_amount*self.out_of_cash_penalty:  #直接结束,这应该是训练的时候可以结束，trade的时候不可以结束
-            print("episode {0} day {1} out of cash".format(self.episode, self.day))
-            #return self.state, 0, False, {"TimeLimit.truncated": True}
-            return self.state, -end_total_asset*self.cash_limit, True, {}
+        #if self.mode == "train" and self.state[0] < self.initial_amount*self.out_of_cash_penalty:  #直接结束,这应该是训练的时候可以结束，test的时候不可以结束
+            #print("episode {0} day {1} out of cash".format(self.episode, self.day))
+            #return self.state, -end_total_asset*self.cash_limit, True, {}
 
         return self.state, self.reward, self.terminal, {}
 
