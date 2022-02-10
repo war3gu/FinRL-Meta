@@ -185,7 +185,7 @@ class StockTradingEnv(gym.Env):
     def step(self, actions):
         self.terminal = self.day >= len(self.df.index.unique())-1
         if self.terminal:                              
-            print(f"Episode: {self.episode}")
+            print(f"Episode end successful: {self.episode}")
             if self.make_plots:
                 self._make_plot()            
             
@@ -284,11 +284,17 @@ class StockTradingEnv(gym.Env):
             self.reward = end_total_asset - begin_total_asset                #总资产差就是reward
             for i in i_list:
                 self.reward -= self.state[i+1]*self.state[self.stock_dim+1+i]*0.01    #清仓股票需要惩罚
-            if self.state[0] < self.initial_amount*self.cash_limit:    #如果金钱太少，需要进行惩罚，否则在训练的时候因为没钱导致探索空间不够，，训练出来的AI像个傻子，test可以把限制去掉。
+
+            if self.state[0] < self.initial_amount*self.cash_limit:   #如果金钱太少，需要进行惩罚，否则在训练的时候因为没钱导致探索空间不够，，训练出来的AI像个傻子，test可以把限制去掉。
                 self.reward -= self.initial_amount*self.out_of_cash_penalty
+
             self.rewards_memory.append(self.reward)
             self.reward = self.reward*self.reward_scaling
 
+        if self.mode == "train" and self.state[0] < self.initial_amount*self.out_of_cash_penalty:  #直接结束,这应该是训练的时候可以结束，trade的时候不可以结束
+            print("episode {0} day {1} out of cash".format(self.episode, self.day))
+            #return self.state, 0, False, {"TimeLimit.truncated": True}
+            return self.state, -self.initial_amount*self.cash_limit, True, {}
 
         return self.state, self.reward, self.terminal, {}
 
