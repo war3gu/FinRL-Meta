@@ -10,6 +10,8 @@ import pickle
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3.common.logger import Logger as log
 
+import random
+
 from copy import deepcopy
 
 
@@ -40,7 +42,8 @@ class StockTradingEnv(gym.Env):
                 initial_buy=False,                   # Use half of initial amount to buy
                 hundred_each_trade=True,
                 out_of_cash_penalty=0.01,
-                cash_limit=0.1):            # The number of shares per lot must be an integer multiple of 100
+                cash_limit=0.1,
+                random_start=True):                  # The number of shares per lot must be an integer multiple of 100
 
         self.day = day                               
         self.df = df                                 
@@ -70,6 +73,8 @@ class StockTradingEnv(gym.Env):
         self.hundred_each_trade = hundred_each_trade
         self.out_of_cash_penalty = out_of_cash_penalty
         self.cash_limit = cash_limit
+        self.random_start = random_start
+
         self.state = self._initiate_state()
         
         # initialize reward
@@ -313,25 +318,39 @@ class StockTradingEnv(gym.Env):
             if fail_count > 0:                                         #15只股票里有10只无操作,惩罚
                 penalty4 = end_total_asset*0.0001*fail_count             #0.0001是随便给的，需要调整
 
-            self.reward = self.reward - penalty1 - penalty2 - penalty3 - penalty4
+
+            #self.reward = self.reward - penalty2
+            #self.reward = -fail_count*1000
 
             if self.day % 100 == 0:
                 print("episode = {0} day = {1} fail_count = {2} ".format(self.episode, self.day, fail_count))
                 print("reward penalty1234 = {0} {1} {2} {3} {4}".format(self.reward, penalty1, penalty2, penalty3, penalty4))
 
 
+
             self.rewards_memory.append(self.reward)
             self.reward = self.reward*self.reward_scaling
 
         if self.mode == "train" and self.state[0] < self.initial_amount*self.out_of_cash_penalty:  #直接结束,这应该是训练的时候可以结束，test的时候不可以结束
-            print("episode {0} day {1} out of cash".format(self.episode, self.day))
+            print("episode {0} day {1} day last {2} out of cash".format(self.episode, self.day, self.day-self.day_start))
             return self.state, -end_total_asset*self.cash_limit, True, {}
 
         return self.state, self.reward, self.terminal, {}
 
-    def reset(self):  
+    def reset(self):
+
+        if self.random_start:
+            day_start = random.choice(range(int(len(self.df) * 0.1)))
+            self.day_start = day_start
+            print("day_start = {0}".format(day_start))
+        else:
+            self.day_start = 0
+
+        self.day = self.day_start
+        self.data = self.df.loc[self.day,:]
+
         #initiate state
-        self.state = self._initiate_state()                 
+        self.state = self._initiate_state()                    #与self.data相关
         
         if self.initial:
             self.asset_memory = [self.initial_amount]
@@ -341,8 +360,7 @@ class StockTradingEnv(gym.Env):
             sum(np.array(self.state[1:(self.stock_dim+1)])*np.array(self.previous_state[(self.stock_dim+1):(self.stock_dim*2+1)]))
             self.asset_memory = [previous_total_asset]
             self.cash_memory  = [self.previous_state[0]]
-        self.day = 0                                        
-        self.data = self.df.loc[self.day,:]                 
+
         self.turbulence = 0                             
         self.cost = 0                                     
         self.trades = 0                                 
