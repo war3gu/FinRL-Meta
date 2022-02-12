@@ -85,7 +85,7 @@ if __name__ == "__main__":
     state_space = stock_dimension * (len(config.TECHNICAL_INDICATORS_LIST) + 2) + 1
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
 
-    total_timesteps = 6000000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
+    total_timesteps = 1000000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
 
     env_kwargs_train = {
         "stock_dim": stock_dimension,
@@ -109,17 +109,17 @@ if __name__ == "__main__":
     DDPG_PARAMS = {
         "batch_size": 1024,  # 一个批次训练的样本数量
         "buffer_size": 100000,
-        "learning_rate": 0.001,
+        "learning_rate": 0.0003,
         "action_noise": "normal",
-        "gradient_steps": 300,  # 一共训练多少个批次
-        "policy_delay": 1,  # critic训练多少次才训练actor一次
-        "train_freq": (10000, "step")  # 采样多少次训练一次
+        "gradient_steps": 10000,       # 一共训练多少个批次，一共看了一千万次，平均每个样本看100次
+        "policy_delay": 2,             # critic训练多少次才训练actor一次
+        "train_freq": (50000, "step")  # 采样多少次训练一次，buff是100000，基本每2次要换全部样本
     }
 
-    POLICY_KWARGS = dict(net_arch=dict(pi=[128, 128], qf=[800, 600]))
+    POLICY_KWARGS = dict(net_arch=dict(pi=[64, 64], qf=[200, 100]))
 
     if platform.system() == 'Windows':
-        total_timesteps = 150000  # 总的采样次数,不能太少
+        total_timesteps = 2000000  # 总的采样次数,不能太少
         env_kwargs_train = {
             "stock_dim": stock_dimension,
             "hmax": 300,
@@ -130,7 +130,7 @@ if __name__ == "__main__":
             "state_space": state_space,
             "action_space": stock_dimension,
             "tech_indicator_list": config.TECHNICAL_INDICATORS_LIST,
-            "print_verbosity": 10,
+            "print_verbosity": 100,
             "initial_buy": False,
             "hundred_each_trade": True,
             "out_of_cash_penalty": 0.001,
@@ -141,16 +141,16 @@ if __name__ == "__main__":
         }
 
         DDPG_PARAMS = {
-            "batch_size": 256,  # 一个批次训练的样本数量
-            "buffer_size": 200000,
-            "learning_rate": 0.001,
+            "batch_size": 1024,  # 一个批次训练的样本数量
+            "buffer_size": 100000,
+            "learning_rate": 0.0003,
             "action_noise": "normal",
-            "gradient_steps": 1000,  # 一共训练多少个批次
+            "gradient_steps": 500,  # 一共训练多少个批次
             "policy_delay": 2,  # critic训练多少次才训练actor一次
-            "train_freq": (10000, "step")  # 采样多少次训练一次
+            "train_freq": (50000, "step")  # 采样多少次训练一次
         }
 
-        POLICY_KWARGS = dict(net_arch=dict(pi=[128, 128], qf=[800, 600]))
+        POLICY_KWARGS = dict(net_arch=dict(pi=[64, 64], qf=[200, 100]))
 
     print("total_timesteps = {0}".format(total_timesteps))
 
@@ -162,7 +162,8 @@ if __name__ == "__main__":
     env_train = None
 
     if platform.system() == 'Windows':
-        env_train, _ = e_train_gym.get_sb_env()
+        env_train, _ = e_train_gym.get_multiproc_env(n=n_cores)
+        #env_train, _ = e_train_gym.get_sb_env()
     else:
         env_train, _ = e_train_gym.get_multiproc_env(n=n_cores)
 

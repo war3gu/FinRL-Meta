@@ -201,7 +201,7 @@ class StockTradingEnv(gym.Env):
         self.buy_fail_count  = 0
         self.terminal = self.day >= len(self.df.index.unique())-1
         if self.terminal:                              
-            print(f"Episode end successful: {self.episode}")
+            print("Episode {0} end successful last = {1}".format(self.episode, self.day - self.day_start))
             if self.make_plots:
                 self._make_plot()            
             
