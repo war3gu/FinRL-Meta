@@ -85,7 +85,7 @@ if __name__ == "__main__":
     state_space = stock_dimension * (len(config.TECHNICAL_INDICATORS_LIST) + 2) + 1
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
 
-    total_timesteps = 4000000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
+    total_timesteps = 6000000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
 
     env_kwargs_train = {
         "stock_dim": stock_dimension,
@@ -111,7 +111,7 @@ if __name__ == "__main__":
         "buffer_size": 100000,
         "learning_rate": 0.001,
         "action_noise": "normal",
-        "gradient_steps": 200,  # 一共训练多少个批次
+        "gradient_steps": 300,  # 一共训练多少个批次
         "policy_delay": 1,  # critic训练多少次才训练actor一次
         "train_freq": (10000, "step")  # 采样多少次训练一次
     }
@@ -134,7 +134,7 @@ if __name__ == "__main__":
             "initial_buy": True,
             "hundred_each_trade": True,
             "out_of_cash_penalty": 0.01,
-            "cash_limit": 0.4,
+            "cash_limit": 0.2,
             "model_name":"stock_a",
             "mode":"train",                  #根据这个来决定是训练还是交易
             "random_start":True
@@ -175,7 +175,7 @@ if __name__ == "__main__":
 
     env_kwargs_test = {
         "stock_dim": stock_dimension,
-        "hmax": 100,
+        "hmax": 300,
         "initial_amount": 1000000,
         "buy_cost_pct": 6.87e-5,
         "sell_cost_pct": 1.0687e-3,
@@ -187,7 +187,7 @@ if __name__ == "__main__":
         "initial_buy": False,
         "hundred_each_trade": True,
         "out_of_cash_penalty": 0.01,
-        "cash_limit": 0.4,
+        "cash_limit": 0.2,
         "model_name":"stock_a",
         "mode":"test",                  #根据这个来决定是训练还是测试
         "random_start":False
