@@ -322,9 +322,9 @@ class StockTradingEnv(gym.Env):
             #self.reward = self.reward - penalty2
             #self.reward = -fail_count*1000
 
-            if self.day % 100 == 0:
-                print("episode = {0} day = {1} fail_count = {2} ".format(self.episode, self.day, fail_count))
-                print("reward penalty1234 = {0} {1} {2} {3} {4}".format(self.reward, penalty1, penalty2, penalty3, penalty4))
+            #if self.day % 100 == 0:
+                #print("episode = {0} day = {1} fail_count = {2} ".format(self.episode, self.day, fail_count))
+                #print("reward penalty1234 = {0} {1} {2} {3} {4}".format(self.reward, penalty1, penalty2, penalty3, penalty4))
 
 
 
@@ -340,7 +340,9 @@ class StockTradingEnv(gym.Env):
     def reset(self):
 
         if self.random_start:
-            day_start = random.choice(range(int(len(self.df) * 0.1)))
+            lll = len(self.df.date.unique())
+            length = int(lll*0.1)
+            day_start = random.choice(range(length))
             self.day_start = day_start
             print("day_start = {0}".format(day_start))
         else:

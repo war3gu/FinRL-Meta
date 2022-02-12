@@ -51,7 +51,7 @@ ticket_list = ['600000.SH', '600009.SH', '600016.SH', '600028.SH', '600030.SH',
                '600276.SH', '600309.SH', '600519.SH', '600547.SH', '600570.SH']
 '''
 
-ticket_list = ['600000.SH', '600009.SH', '600016.SH', '600028.SH', '600030.SH', '600031.SH']
+ticket_list = ['600000.SH', '600009.SH', '600016.SH']
 
 train_start_date = '2015-01-01'
 train_stop_date = '2019-08-01'
@@ -85,11 +85,11 @@ if __name__ == "__main__":
     state_space = stock_dimension * (len(config.TECHNICAL_INDICATORS_LIST) + 2) + 1
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
 
-    total_timesteps = 1000000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
+    total_timesteps = 4000000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
 
     env_kwargs_train = {
         "stock_dim": stock_dimension,
-        "hmax": 100,
+        "hmax": 300,
         "initial_amount": 1000000,
         "buy_cost_pct": 6.87e-5,
         "sell_cost_pct": 1.0687e-3,
@@ -101,14 +101,14 @@ if __name__ == "__main__":
         "initial_buy": True,
         "hundred_each_trade": True,
         "out_of_cash_penalty": 0.01,
-        "cash_limit": 0.4,
+        "cash_limit": 0.2,
         "model_name":"stock_a",
         "mode":"train",                  #根据这个来决定是训练还是交易
         "random_start":True
     }
     DDPG_PARAMS = {
         "batch_size": 1024,  # 一个批次训练的样本数量
-        "buffer_size": 500000,
+        "buffer_size": 100000,
         "learning_rate": 0.001,
         "action_noise": "normal",
         "gradient_steps": 200,  # 一共训练多少个批次
