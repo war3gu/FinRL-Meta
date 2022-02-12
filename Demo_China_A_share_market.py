@@ -98,9 +98,9 @@ if __name__ == "__main__":
         "action_space": stock_dimension,
         "tech_indicator_list": config.TECHNICAL_INDICATORS_LIST,
         "print_verbosity": 100,                     #多少个episode结束打一次log
-        "initial_buy": True,
+        "initial_buy": False,
         "hundred_each_trade": True,
-        "out_of_cash_penalty": 0.01,
+        "out_of_cash_penalty": 0.001,
         "cash_limit": 0.2,
         "model_name":"stock_a",
         "mode":"train",                  #根据这个来决定是训练还是交易
@@ -131,9 +131,9 @@ if __name__ == "__main__":
             "action_space": stock_dimension,
             "tech_indicator_list": config.TECHNICAL_INDICATORS_LIST,
             "print_verbosity": 10,
-            "initial_buy": True,
+            "initial_buy": False,
             "hundred_each_trade": True,
-            "out_of_cash_penalty": 0.01,
+            "out_of_cash_penalty": 0.001,
             "cash_limit": 0.2,
             "model_name":"stock_a",
             "mode":"train",                  #根据这个来决定是训练还是交易
@@ -186,7 +186,7 @@ if __name__ == "__main__":
         "print_verbosity": 1,
         "initial_buy": False,
         "hundred_each_trade": True,
-        "out_of_cash_penalty": 0.01,
+        "out_of_cash_penalty": 0.001,
         "cash_limit": 0.2,
         "model_name":"stock_a",
         "mode":"test",                  #根据这个来决定是训练还是测试

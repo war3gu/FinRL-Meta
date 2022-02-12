@@ -310,7 +310,7 @@ class StockTradingEnv(gym.Env):
                 penalty1 += self.state[i+1]*self.state[self.stock_dim+1+i]*0.001    #此处有个bug，一直没有股票，此处的惩罚是0
 
             if self.state[0] < end_total_asset*self.cash_limit:        #如果金钱太少，需要进行惩罚，否则在训练的时候因为没钱导致探索空间不够，，训练出来的AI像个傻子，test可以把限制去掉。
-                penalty2 = self.initial_amount*self.out_of_cash_penalty*0.1
+                penalty2 = self.initial_amount*self.out_of_cash_penalty
 
             penalty3 = end_total_asset*0.00011                         #每天金钱要固定减去一定金额，当做基准利息损失,否则ai会学会什么都不做，0.00011是每天利率
 
@@ -319,7 +319,7 @@ class StockTradingEnv(gym.Env):
                 penalty4 = end_total_asset*0.0001*fail_count             #0.0001是随便给的，需要调整
 
 
-            #self.reward = self.reward - penalty2
+            self.reward = self.reward - penalty2
             #self.reward = -fail_count*1000
 
             #if self.day % 100 == 0:
@@ -331,9 +331,11 @@ class StockTradingEnv(gym.Env):
             self.rewards_memory.append(self.reward)
             self.reward = self.reward*self.reward_scaling
 
+        '''
         if self.mode == "train" and self.state[0] < self.initial_amount*self.out_of_cash_penalty:  #直接结束,这应该是训练的时候可以结束，test的时候不可以结束
             print("episode {0} day {1} day last {2} out of cash".format(self.episode, self.day, self.day-self.day_start))
             return self.state, -end_total_asset*self.cash_limit, True, {}
+        '''
 
         return self.state, self.reward, self.terminal, {}
 
