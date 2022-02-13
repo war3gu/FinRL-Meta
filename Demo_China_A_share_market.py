@@ -107,7 +107,7 @@ if __name__ == "__main__":
         "random_start":True
     }
     DDPG_PARAMS = {
-        "batch_size": 1024,  # 一个批次训练的样本数量
+        "batch_size": 1024*8,  # 一个批次训练的样本数量
         "buffer_size": 100000,
         "learning_rate": 0.0003,
         "action_noise": "normal",
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     POLICY_KWARGS = dict(net_arch=dict(pi=[64, 64], qf=[200, 100]))
 
     if platform.system() == 'Windows':
-        total_timesteps = 2000000  # 总的采样次数,不能太少
+        total_timesteps = 1000000  # 总的采样次数,不能太少
         env_kwargs_train = {
             "stock_dim": stock_dimension,
             "hmax": 300,
@@ -141,13 +141,13 @@ if __name__ == "__main__":
         }
 
         DDPG_PARAMS = {
-            "batch_size": 1024,  # 一个批次训练的样本数量
-            "buffer_size": 100000,
+            "batch_size": 1024*8,                    #一个批次训练的样本数量
+            "buffer_size": 100000,                   #每个看1000次，需要1亿次
             "learning_rate": 0.0003,
             "action_noise": "normal",
-            "gradient_steps": 500,  # 一共训练多少个批次
-            "policy_delay": 2,  # critic训练多少次才训练actor一次
-            "train_freq": (10000, "step")  # 采样多少次训练一次
+            "gradient_steps": 10000,                 # 一共训练多少个批次
+            "policy_delay": 2,                       # critic训练多少次才训练actor一次
+            "train_freq": (10000, "step")            # 采样多少次训练一次
         }
 
         POLICY_KWARGS = dict(net_arch=dict(pi=[64, 64], qf=[200, 100]))
