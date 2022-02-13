@@ -89,8 +89,8 @@ if __name__ == "__main__":
 
     env_kwargs_train = {
         "stock_dim": stock_dimension,
-        "hmax": 300,
-        "initial_amount": 1000000,
+        "hmax": 1000,
+        "initial_amount": 100000000,
         "buy_cost_pct": 6.87e-5,
         "sell_cost_pct": 1.0687e-3,
         "reward_scaling": 1e-1,
@@ -109,7 +109,7 @@ if __name__ == "__main__":
     DDPG_PARAMS = {
         "batch_size": 1024*8*4*2,      # 一个批次训练的样本数量
         "buffer_size": 100000,
-        "learning_rate": 0.001,
+        "learning_rate": 0.0001,
         "action_noise": "normal",
         "gradient_steps": 1000,       # 一共训练多少个批次，一共看了一千万次，平均每个样本看100次
         "policy_delay": 2,             # critic训练多少次才训练actor一次
@@ -122,8 +122,8 @@ if __name__ == "__main__":
         total_timesteps = 1000000  # 总的采样次数,不能太少
         env_kwargs_train = {
             "stock_dim": stock_dimension,
-            "hmax": 300,
-            "initial_amount": 1000000,
+            "hmax": 1000,
+            "initial_amount": 100000000,                            #多准备点金钱，让ai能够频繁买卖
             "buy_cost_pct": 6.87e-5,
             "sell_cost_pct": 1.0687e-3,
             "reward_scaling": 1e-1,
@@ -143,7 +143,7 @@ if __name__ == "__main__":
         DDPG_PARAMS = {
             "batch_size": 1024*8*4*2,                    #一个批次训练的样本数量
             "buffer_size": 100000,                   #每个看1000次，需要1亿次
-            "learning_rate": 0.001,
+            "learning_rate": 0.0001,
             "action_noise": "normal",
             "gradient_steps": 1000,                  # 一共训练多少个批次
             "policy_delay": 2,                       # critic训练多少次才训练actor一次
