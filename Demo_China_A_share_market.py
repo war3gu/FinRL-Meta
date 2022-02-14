@@ -146,7 +146,7 @@ if __name__ == "__main__":
             "learning_rate": 0.0002,
             "action_noise": "ornstein_uhlenbeck",
             "gradient_steps": 500,                  # 一共训练多少个批次
-            "policy_delay": 2,                       # critic训练多少次才训练actor一次
+            "policy_delay": 2,                      # critic训练多少次才训练actor一次
             "train_freq": (5000, "step")            # 采样多少次训练一次
         }
 
@@ -169,11 +169,11 @@ if __name__ == "__main__":
 
     agent = DRLAgent(env=env_train)
 
-    model_ddpg_before_train = agent.get_model("td3", model_kwargs=DDPG_PARAMS, policy_kwargs=POLICY_KWARGS)
+    model_ddpg_before_train = agent.get_model("td3", seed=46, model_kwargs=DDPG_PARAMS, policy_kwargs=POLICY_KWARGS)
 
     if os.path.exists("moneyMaker.model"):
         model_ddpg_before_train.load("moneyMaker.model")
-        model_ddpg_before_train.load_replay_buffer("moneyMaker_replay_buffer")
+        model_ddpg_before_train.load_replay_buffer("moneyMaker_replay_buffer.pkl")
         print("load moneyMaker")
     else:
         print("no moneyMaker")
@@ -183,7 +183,7 @@ if __name__ == "__main__":
         model_ddpg_after_train = agent.train_model(model=model_ddpg_before_train, tb_log_name='td3',total_timesteps=total_timesteps)
         print("end train")
         model_ddpg_after_train.save("moneyMaker.model")
-        model_ddpg_after_train.save_replay_buffer("moneyMaker_replay_buffer")
+        model_ddpg_after_train.save_replay_buffer("moneyMaker_replay_buffer.pkl")
 
         env_kwargs_test = {
             "stock_dim": stock_dimension,
