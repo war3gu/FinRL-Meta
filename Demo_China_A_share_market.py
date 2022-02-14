@@ -85,7 +85,7 @@ if __name__ == "__main__":
     state_space = stock_dimension * (len(config.TECHNICAL_INDICATORS_LIST) + 2) + 1
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
 
-    total_timesteps = 1000000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
+    total_timesteps = 3000000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
 
     env_kwargs_train = {
         "stock_dim": stock_dimension,
@@ -93,7 +93,7 @@ if __name__ == "__main__":
         "initial_amount": 100000000,
         "buy_cost_pct": 6.87e-5,
         "sell_cost_pct": 1.0687e-3,
-        "reward_scaling": 1e-1,
+        "reward_scaling": 1e-3,
         "state_space": state_space,
         "action_space": stock_dimension,
         "tech_indicator_list": config.TECHNICAL_INDICATORS_LIST,
@@ -110,7 +110,7 @@ if __name__ == "__main__":
         "batch_size": 1024*8*4*2,      # 一个批次训练的样本数量
         "buffer_size": 100000,
         "learning_rate": 0.0001,
-        "action_noise": "normal",
+        "action_noise": "ornstein_uhlenbeck",       #DDPG使用的是ou噪声
         "gradient_steps": 1000,       # 一共训练多少个批次，一共看了一千万次，平均每个样本看100次
         "policy_delay": 2,             # critic训练多少次才训练actor一次
         "train_freq": (5000, "step")  # 采样多少次训练一次，buff是100000，基本每2次要换全部样本.4个线程，4万次才训练一次
@@ -126,7 +126,7 @@ if __name__ == "__main__":
             "initial_amount": 100000000,                            #多准备点金钱，让ai能够频繁买卖
             "buy_cost_pct": 6.87e-5,
             "sell_cost_pct": 1.0687e-3,
-            "reward_scaling": 1e-1,
+            "reward_scaling": 1e-3,
             "state_space": state_space,
             "action_space": stock_dimension,
             "tech_indicator_list": config.TECHNICAL_INDICATORS_LIST,
@@ -144,7 +144,7 @@ if __name__ == "__main__":
             "batch_size": 1024*8*4*2,                    #一个批次训练的样本数量
             "buffer_size": 100000,                   #每个看1000次，需要1亿次
             "learning_rate": 0.0001,
-            "action_noise": "normal",
+            "action_noise": "ornstein_uhlenbeck",
             "gradient_steps": 1000,                  # 一共训练多少个批次
             "policy_delay": 2,                       # critic训练多少次才训练actor一次
             "train_freq": (5000, "step")            # 采样多少次训练一次
@@ -176,11 +176,11 @@ if __name__ == "__main__":
 
     env_kwargs_test = {
         "stock_dim": stock_dimension,
-        "hmax": 300,
-        "initial_amount": 1000000,
+        "hmax": 1000,
+        "initial_amount": 100000000,
         "buy_cost_pct": 6.87e-5,
         "sell_cost_pct": 1.0687e-3,
-        "reward_scaling": 1e-1,
+        "reward_scaling": 1e-3,
         "state_space": state_space,
         "action_space": stock_dimension,
         "tech_indicator_list": config.TECHNICAL_INDICATORS_LIST,
