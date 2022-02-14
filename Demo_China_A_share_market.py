@@ -85,7 +85,7 @@ if __name__ == "__main__":
     state_space = stock_dimension * (len(config.TECHNICAL_INDICATORS_LIST) + 2) + 1
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
 
-    total_timesteps = 3000000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
+    total_timesteps = 500000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
 
     env_kwargs_train = {
         "stock_dim": stock_dimension,
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     POLICY_KWARGS = dict(net_arch=dict(pi=[64, 64], qf=[200, 100]))
 
     if platform.system() == 'Windows':
-        total_timesteps = 1000000  # 总的采样次数,不能太少
+        total_timesteps = 500000  # 总的采样次数,不能太少
         env_kwargs_train = {
             "stock_dim": stock_dimension,
             "hmax": 1000,
@@ -170,38 +170,43 @@ if __name__ == "__main__":
     agent = DRLAgent(env=env_train)
 
     model_ddpg_before_train = agent.get_model("td3", model_kwargs=DDPG_PARAMS, policy_kwargs=POLICY_KWARGS)
-    print("start train")
-    model_ddpg_after_train = agent.train_model(model=model_ddpg_before_train, tb_log_name='td3',total_timesteps=total_timesteps)
-    print("end train")
 
-    env_kwargs_test = {
-        "stock_dim": stock_dimension,
-        "hmax": 1000,
-        "initial_amount": 100000000,
-        "buy_cost_pct": 6.87e-5,
-        "sell_cost_pct": 1.0687e-3,
-        "reward_scaling": 1e-3,
-        "state_space": state_space,
-        "action_space": stock_dimension,
-        "tech_indicator_list": config.TECHNICAL_INDICATORS_LIST,
-        "print_verbosity": 1,
-        "initial_buy": False,
-        "hundred_each_trade": True,
-        "out_of_cash_penalty": 0.001,
-        "cash_limit": 0.2,
-        "model_name":"stock_a",
-        "mode":"test",                  #根据这个来决定是训练还是测试
-        "random_start":False
-    }
+    if os.path.exists("moneyMaker.model"):
+        model_ddpg_before_train.load("moneyMaker.model")
 
-    e_trade_gym = StockTradingEnv(df=trade, **env_kwargs_test)
-    print("start test")
-    df_account_value, df_actions = DRLAgent.DRL_prediction(model=model_ddpg_after_train, environment=e_trade_gym)
-    print("end test")
-    df_actions.to_csv("action.csv", index=False)
-    df_account_value.to_csv("account.csv", index=False)
+    for i in range(100):
+        print("start train")
+        model_ddpg_after_train = agent.train_model(model=model_ddpg_before_train, tb_log_name='td3',total_timesteps=total_timesteps)
+        print("end train")
+        model_ddpg_after_train.save("moneyMaker.model")
 
-    print("game end")
+        env_kwargs_test = {
+            "stock_dim": stock_dimension,
+            "hmax": 1000,
+            "initial_amount": 100000000,
+            "buy_cost_pct": 6.87e-5,
+            "sell_cost_pct": 1.0687e-3,
+            "reward_scaling": 1e-3,
+            "state_space": state_space,
+            "action_space": stock_dimension,
+            "tech_indicator_list": config.TECHNICAL_INDICATORS_LIST,
+            "print_verbosity": 1,
+            "initial_buy": False,
+            "hundred_each_trade": True,
+            "out_of_cash_penalty": 0.001,
+            "cash_limit": 0.2,
+            "model_name":"stock_a",
+            "mode":"test",                  #根据这个来决定是训练还是测试
+            "random_start":False
+        }
+
+        e_trade_gym = StockTradingEnv(df=trade, **env_kwargs_test)
+        print("start test")
+        df_account_value, df_actions = DRLAgent.DRL_prediction(model=model_ddpg_after_train, environment=e_trade_gym)
+        print("end test")
+        df_actions.to_csv("action.csv", index=False)
+        df_account_value.to_csv("account.csv", index=False)
+        print("game end")
 
 # 下面代码从网上取的数据有时会异常导致崩溃
 
