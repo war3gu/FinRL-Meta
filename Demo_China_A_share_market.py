@@ -119,7 +119,7 @@ if __name__ == "__main__":
     POLICY_KWARGS = dict(net_arch=dict(pi=[64, 64], qf=[200, 100]))
 
     if platform.system() == 'Windows':
-        total_timesteps = 500000  # 总的采样次数,不能太少
+        total_timesteps = 50000  # 总的采样次数,不能太少
         env_kwargs_train = {
             "stock_dim": stock_dimension,
             "hmax": 1000,
@@ -173,12 +173,17 @@ if __name__ == "__main__":
 
     if os.path.exists("moneyMaker.model"):
         model_ddpg_before_train.load("moneyMaker.model")
+        model_ddpg_before_train.load_replay_buffer("moneyMaker_replay_buffer")
+        print("load moneyMaker")
+    else:
+        print("no moneyMaker")
 
-    for i in range(100):
+    for i in range(2):
         print("start train")
         model_ddpg_after_train = agent.train_model(model=model_ddpg_before_train, tb_log_name='td3',total_timesteps=total_timesteps)
         print("end train")
         model_ddpg_after_train.save("moneyMaker.model")
+        model_ddpg_after_train.save_replay_buffer("moneyMaker_replay_buffer")
 
         env_kwargs_test = {
             "stock_dim": stock_dimension,
