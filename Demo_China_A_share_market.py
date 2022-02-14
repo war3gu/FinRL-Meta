@@ -109,9 +109,9 @@ if __name__ == "__main__":
     DDPG_PARAMS = {
         "batch_size": 1024*8*4*2,      # 一个批次训练的样本数量
         "buffer_size": 100000,
-        "learning_rate": 0.0001,
+        "learning_rate": 0.0002,
         "action_noise": "ornstein_uhlenbeck",       #DDPG使用的是ou噪声
-        "gradient_steps": 1000,       # 一共训练多少个批次，一共看了一千万次，平均每个样本看100次
+        "gradient_steps": 500,       # 一共训练多少个批次，一共看了一千万次，平均每个样本看100次
         "policy_delay": 2,             # critic训练多少次才训练actor一次
         "train_freq": (5000, "step")  # 采样多少次训练一次，buff是100000，基本每2次要换全部样本.4个线程，4万次才训练一次
     }
@@ -143,9 +143,9 @@ if __name__ == "__main__":
         DDPG_PARAMS = {
             "batch_size": 1024*8*4*2,                    #一个批次训练的样本数量
             "buffer_size": 100000,                   #每个看1000次，需要1亿次
-            "learning_rate": 0.0001,
+            "learning_rate": 0.0002,
             "action_noise": "ornstein_uhlenbeck",
-            "gradient_steps": 1000,                  # 一共训练多少个批次
+            "gradient_steps": 500,                  # 一共训练多少个批次
             "policy_delay": 2,                       # critic训练多少次才训练actor一次
             "train_freq": (5000, "step")            # 采样多少次训练一次
         }
