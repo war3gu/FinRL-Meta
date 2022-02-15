@@ -27,6 +27,8 @@ from pyfolio import timeseries
 import multiprocessing
 import platform
 
+from stable_baselines3 import TD3
+
 print("ALL Modules have been imported!")
 
 # ### Create folders
@@ -116,7 +118,7 @@ if __name__ == "__main__":
         "train_freq": (5000, "step")  # 采样多少次训练一次，buff是100000，基本每2次要换全部样本.4个线程，4万次才训练一次
     }
 
-    POLICY_KWARGS = dict(net_arch=dict(pi=[64, 64], qf=[200, 100]))
+    POLICY_KWARGS = dict(net_arch=dict(pi=[64, 32, 32], qf=[150, 100, 50]))
 
     if platform.system() == 'Windows':
         total_timesteps = 50000  # 总的采样次数,不能太少
@@ -150,7 +152,7 @@ if __name__ == "__main__":
             "train_freq": (5000, "step")            # 采样多少次训练一次
         }
 
-        POLICY_KWARGS = dict(net_arch=dict(pi=[64, 64], qf=[200, 100]))
+        POLICY_KWARGS = dict(net_arch=dict(pi=[64, 32, 32], qf=[150, 100, 50]))
 
     print("total_timesteps = {0}".format(total_timesteps))
 
@@ -169,16 +171,20 @@ if __name__ == "__main__":
 
     agent = DRLAgent(env=env_train)
 
-    model_ddpg_before_train = agent.get_model("td3", seed=46, model_kwargs=DDPG_PARAMS, policy_kwargs=POLICY_KWARGS)
+    model_ddpg_before_train = None
 
     if os.path.exists("moneyMaker.model"):
-        model_ddpg_before_train.load("moneyMaker.model")
+        #model_ddpg_before_train.load("moneyMaker.model", env=env_train)
+        #model_ddpg_before_train.load_replay_buffer("moneyMaker_replay_buffer.pkl")
+        model_ddpg_before_train = TD3.load("moneyMaker.model")
+        model_ddpg_before_train.set_env(env_train)
         model_ddpg_before_train.load_replay_buffer("moneyMaker_replay_buffer.pkl")
         print("load moneyMaker")
     else:
+        model_ddpg_before_train = agent.get_model("td3", seed=46, model_kwargs=DDPG_PARAMS, policy_kwargs=POLICY_KWARGS)
         print("no moneyMaker")
 
-    for i in range(2):
+    for i in range(20):
         print("start train")
         model_ddpg_after_train = agent.train_model(model=model_ddpg_before_train, tb_log_name='td3',total_timesteps=total_timesteps)
         print("end train")
