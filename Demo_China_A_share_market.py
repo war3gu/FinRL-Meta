@@ -95,7 +95,7 @@ if __name__ == "__main__":
         "initial_amount": 1000000,
         "buy_cost_pct": 6.87e-5,
         "sell_cost_pct": 1.0687e-3,
-        "reward_scaling": 1e-3,
+        "reward_scaling": 1e-1,
         "state_space": state_space,
         "action_space": stock_dimension,
         "tech_indicator_list": config.TECHNICAL_INDICATORS_LIST,
@@ -115,7 +115,8 @@ if __name__ == "__main__":
         "action_noise": "ornstein_uhlenbeck",       #DDPG使用的是ou噪声
         "gradient_steps": 500,       # 一共训练多少个批次，一共看了一千万次，平均每个样本看100次
         "policy_delay": 2,             # critic训练多少次才训练actor一次
-        "train_freq": (5000, "step")  # 采样多少次训练一次，buff是100000，基本每2次要换全部样本.4个线程，4万次才训练一次
+        "train_freq": (5000, "step"),  # 采样多少次训练一次，buff是100000，基本每2次要换全部样本.4个线程，4万次才训练一次
+        "learning_starts": 10
     }
 
     POLICY_KWARGS = dict(net_arch=dict(pi=[256, 128, 128, 64, 64], qf=[256, 128, 128, 64, 64]))
@@ -128,7 +129,7 @@ if __name__ == "__main__":
             "initial_amount": 1000000,                            #多准备点金钱，让ai能够频繁买卖
             "buy_cost_pct": 6.87e-5,
             "sell_cost_pct": 1.0687e-3,
-            "reward_scaling": 1e-3,
+            "reward_scaling": 1e-1,
             "state_space": state_space,
             "action_space": stock_dimension,
             "tech_indicator_list": config.TECHNICAL_INDICATORS_LIST,
@@ -195,10 +196,10 @@ if __name__ == "__main__":
         env_kwargs_test = {
             "stock_dim": stock_dimension,
             "hmax": 1000,
-            "initial_amount": 100000000,
+            "initial_amount": 1000000,
             "buy_cost_pct": 6.87e-5,
             "sell_cost_pct": 1.0687e-3,
-            "reward_scaling": 1e-3,
+            "reward_scaling": 1e-1,
             "state_space": state_space,
             "action_space": stock_dimension,
             "tech_indicator_list": config.TECHNICAL_INDICATORS_LIST,
