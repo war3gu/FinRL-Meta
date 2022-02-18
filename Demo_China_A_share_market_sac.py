@@ -101,7 +101,7 @@ if __name__ == "__main__":
         "action_space": stock_dimension,
         "tech_indicator_list": config.TECHNICAL_INDICATORS_LIST,
         "print_verbosity": 100,                     #多少个episode结束打一次log
-        "initial_buy": False,
+        "initial_buy": True,
         "hundred_each_trade": True,
         "out_of_cash_penalty": 0.001,
         "cash_limit": 0.2,
@@ -111,13 +111,12 @@ if __name__ == "__main__":
     }
 
     #gamma设置为0.9应该能降低收敛的难度，不用看得那么远
-    DDPG_PARAMS = {
+    SAC_PARAMS = {
         "batch_size": 1024*8*4*2,      # 一个批次训练的样本数量
         "buffer_size": 100000,
         "learning_rate": 0.0002,
-        "action_noise": "ornstein_uhlenbeck",       #DDPG使用的是ou噪声
+        "action_noise": "normal",
         "gradient_steps": 500,       # 一共训练多少个批次，一共看了一千万次，平均每个样本看100次
-        "policy_delay": 2,             # critic训练多少次才训练actor一次
         "train_freq": (5000, "step"),  # 采样多少次训练一次，buff是100000，基本每2次要换全部样本.4个线程，4万次才训练一次
         "learning_starts": 10
     }
@@ -137,7 +136,7 @@ if __name__ == "__main__":
             "action_space": stock_dimension,
             "tech_indicator_list": config.TECHNICAL_INDICATORS_LIST,
             "print_verbosity": 100,
-            "initial_buy": False,
+            "initial_buy": True,
             "hundred_each_trade": True,
             "out_of_cash_penalty": 0.001,
             "cash_limit": 0.2,
@@ -146,13 +145,12 @@ if __name__ == "__main__":
             "random_start":True
         }
 
-        DDPG_PARAMS = {
+        SAC_PARAMS = {
             "batch_size": 1024*8*4*2,                    #一个批次训练的样本数量
             "buffer_size": 100000,                   #每个看1000次，需要1亿次
             "learning_rate": 0.0002,
-            "action_noise": "ornstein_uhlenbeck",
+            "action_noise": "normal",
             "gradient_steps": 500,                  # 一共训练多少个批次
-            "policy_delay": 2,                      # critic训练多少次才训练actor一次
             "train_freq": (5000, "step"),            # 采样多少次训练一次
             "learning_starts": 10
         }
@@ -170,31 +168,28 @@ if __name__ == "__main__":
 
     if platform.system() == 'Windows':
         env_train, _ = e_train_gym.get_multiproc_env(n=n_cores)
-        #env_train, _ = e_train_gym.get_sb_env()
     else:
         env_train, _ = e_train_gym.get_multiproc_env(n=n_cores)
 
     agent = DRLAgent(env=env_train)
 
-    model_ddpg_before_train = None
+    model_sac_before_train = None
 
-    if os.path.exists("moneyMaker.model"):
-        #model_ddpg_before_train.load("moneyMaker.model", env=env_train)
-        #model_ddpg_before_train.load_replay_buffer("moneyMaker_replay_buffer.pkl")
-        model_ddpg_before_train = TD3.load("moneyMaker.model")
-        model_ddpg_before_train.set_env(env_train)
-        model_ddpg_before_train.load_replay_buffer("moneyMaker_replay_buffer.pkl")
+    if os.path.exists("moneyMaker_sac.model"):
+        model_sac_before_train = SAC.load("moneyMaker_sac.model")
+        model_sac_before_train.set_env(env_train)
+        model_sac_before_train.load_replay_buffer("moneyMaker_replay_buffer_sac.pkl")
         print("load moneyMaker")
     else:
-        model_ddpg_before_train = agent.get_model("td3", seed=46, model_kwargs=DDPG_PARAMS, policy_kwargs=POLICY_KWARGS)
+        model_sac_before_train = agent.get_model("sac", seed=46, model_kwargs=SAC_PARAMS, policy_kwargs=POLICY_KWARGS)
         print("no moneyMaker")
 
     for i in range(20):
         print("start train")
-        model_ddpg_after_train = agent.train_model(model=model_ddpg_before_train, tb_log_name='td3',total_timesteps=total_timesteps)
+        model_sac_after_train = agent.train_model(model=model_sac_before_train, tb_log_name='sac',total_timesteps=total_timesteps)
         print("end train")
-        model_ddpg_after_train.save("moneyMaker.model")
-        model_ddpg_after_train.save_replay_buffer("moneyMaker_replay_buffer.pkl")
+        model_sac_after_train.save("moneyMaker_sac.model")
+        model_sac_after_train.save_replay_buffer("moneyMaker_replay_buffer_sac.pkl")
 
         env_kwargs_test = {
             "stock_dim": stock_dimension,
@@ -218,7 +213,7 @@ if __name__ == "__main__":
 
         e_trade_gym = StockTradingEnv(df=trade, **env_kwargs_test)
         print("start test")
-        df_account_value, df_actions = DRLAgent.DRL_prediction(model=model_ddpg_after_train, environment=e_trade_gym)
+        df_account_value, df_actions = DRLAgent.DRL_prediction(model=model_sac_after_train, environment=e_trade_gym)
         print("end test")
         df_actions.to_csv("action.csv", index=False)
         df_account_value.to_csv("account.csv", index=False)

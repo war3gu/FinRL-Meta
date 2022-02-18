@@ -253,7 +253,7 @@ class StockTradingEnv(gym.Env):
             #logger.record(key="environment/total_cost", value=self.cost)
             #logger.record(key="environment/total_trades", value=self.trades)
 
-            return self.state, self.reward, self.terminal, {}
+            return self.state, 0, self.terminal, {}    #day不再变化，reward为0
 
         else:
 
@@ -486,7 +486,7 @@ class StockTradingEnv(gym.Env):
         """Initialize the state, already bought some"""
         prices = self.data.close.values.tolist()
         avg_price = sum(prices)/len(prices)
-        buy_nums_each_tic = 0.5*self.initial_amount//(avg_price*len(prices))  # only use half of the initial amount
+        buy_nums_each_tic = 0.3*self.initial_amount//(avg_price*len(prices))  # only use half of the initial amount
         cost = sum(prices)*buy_nums_each_tic
 
         state = [self.initial_amount-cost] + \
