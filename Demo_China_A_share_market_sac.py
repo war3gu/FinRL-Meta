@@ -118,7 +118,8 @@ if __name__ == "__main__":
         "action_noise": "normal",
         "gradient_steps": 500,       # 一共训练多少个批次，一共看了一千万次，平均每个样本看100次
         "train_freq": (5000, "step"),  # 采样多少次训练一次，buff是100000，基本每2次要换全部样本.4个线程，4万次才训练一次
-        "learning_starts": 10
+        "learning_starts": 10,
+        "ent_coef": "auto_0.1",
     }
 
     POLICY_KWARGS = dict(net_arch=dict(pi=[256, 128, 128, 64, 64], qf=[256, 128, 128, 64, 64]))
@@ -152,7 +153,8 @@ if __name__ == "__main__":
             "action_noise": "normal",
             "gradient_steps": 500,                  # 一共训练多少个批次
             "train_freq": (5000, "step"),            # 采样多少次训练一次
-            "learning_starts": 10
+            "learning_starts": 10,
+            "ent_coef": "auto_0.1",
         }
 
         POLICY_KWARGS = dict(net_arch=dict(pi=[256, 128, 128, 64, 64], qf=[256, 128, 128, 64, 64]))
