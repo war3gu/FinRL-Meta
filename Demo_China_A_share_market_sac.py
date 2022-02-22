@@ -161,6 +161,8 @@ if __name__ == "__main__":
 
     print("total_timesteps = {0}".format(total_timesteps))
 
+    xxx = train.isna().any()
+
     e_train_gym = StockTradingEnv(df=train, **env_kwargs_train)
 
     n_cores = multiprocessing.cpu_count()
