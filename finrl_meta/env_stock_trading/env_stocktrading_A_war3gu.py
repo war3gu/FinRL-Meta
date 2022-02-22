@@ -299,7 +299,10 @@ class StockTradingEnv(gym.Env):
             #必须要在self.state[0]上进行惩罚，而不是只在reward上进行惩罚
             if self.state[0] < end_total_asset*self.cash_limit:        #如果金钱太少，需要进行惩罚，否则在训练的时候因为没钱导致探索空间不够，，训练出来的AI像个傻子，test可以把限制去掉。
                 penalty = self.initial_amount*self.out_of_cash_penalty
-                self.state[0] -= penalty
+                if self.state[0] >= penalty:
+                    self.state[0] -= penalty
+                else:
+                    self.state[0] = 0
                 end_total_asset = self.state[0]+sum(np.array(self.state[1:(self.stock_dim+1)])*np.array(self.state[(self.stock_dim+1):(self.stock_dim*2+1)]))
 
             self.asset_memory.append(end_total_asset)
