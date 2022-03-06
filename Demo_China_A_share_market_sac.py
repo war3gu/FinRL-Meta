@@ -17,6 +17,7 @@ display.set_matplotlib_formats("svg")
 from finrl_meta import config
 from finrl_meta.data_processors.processor_tusharepro import TushareProProcessor, ReturnPlotter
 from finrl_meta.env_stock_trading.env_stocktrading_A_war3gu import StockTradingEnv
+#from finrl_meta.env_stock_trading.env_stocktrading_A import StockTradingEnv
 from drl_agents.stablebaselines3_models import DRLAgent
 
 pd.options.display.max_columns = None
@@ -147,12 +148,12 @@ if __name__ == "__main__":
         }
 
         SAC_PARAMS = {
-            "batch_size": 1024*8*4*2,                    #一个批次训练的样本数量
+            "batch_size": 256,                    #一个批次训练的样本数量
             "buffer_size": 100000,                   #每个看1000次，需要1亿次
             "learning_rate": 0.0002,
             "action_noise": "normal",
-            "gradient_steps": 500,                  # 一共训练多少个批次
-            "train_freq": (5000, "step"),            # 采样多少次训练一次
+            "gradient_steps": 8,                  # 一共训练多少个批次
+            "train_freq": (1000, "step"),            # 采样多少次训练一次
             "learning_starts": 10,
             "ent_coef": "auto_0.1",
         }
@@ -171,7 +172,7 @@ if __name__ == "__main__":
     env_train = None
 
     if platform.system() == 'Windows':
-        env_train, _ = e_train_gym.get_multiproc_env(n=n_cores)
+        env_train, _ = e_train_gym.get_sb_env()
     else:
         env_train, _ = e_train_gym.get_multiproc_env(n=n_cores)
 

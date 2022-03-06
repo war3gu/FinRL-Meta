@@ -69,6 +69,7 @@ ts_processor.download_data(ticket_list, train_start_date, val_stop_date, "1D")
 ts_processor.clean_data()
 ts_processor.dataframe
 
+
 ts_processor.add_technical_indicator(config.TECHNICAL_INDICATORS_LIST)
 ts_processor.clean_data()
 
