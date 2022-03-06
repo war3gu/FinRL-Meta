@@ -33,7 +33,7 @@ from stable_baselines3 import SAC
 
 import matplotlib
 import matplotlib.pyplot as plt
-matplotlib.use('TKAgg')
+#matplotlib.use('TKAgg')
 import numpy as np
 
 print("ALL Modules have been imported!")
@@ -102,6 +102,7 @@ plt.show()
 '''
 
 if __name__ == "__main__":
+    __spec__ = "ModuleSpec(name='builtins', loader=<class '_frozen_importlib.BuiltinImporter'>)"
     token = '27080ec403c0218f96f388bca1b1d85329d563c91a43672239619ef5'
     ts_processor = TushareProProcessor("tusharepro", token=token)
 
