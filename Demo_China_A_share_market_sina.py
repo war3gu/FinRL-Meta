@@ -120,7 +120,7 @@ if __name__ == "__main__":
     state_space = 1 + stock_dimension + stock_dimension   # 现金，持仓，股价
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
 
-    total_timesteps = 2000000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
+    total_timesteps = 500000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
 
     env_kwargs_train = {
         "stock_dim": stock_dimension,
@@ -137,11 +137,11 @@ if __name__ == "__main__":
     }
 
     DDPG_PARAMS = {
-        "batch_size": 1024*8*4*2,                       #一个批次训练的样本数量
+        "batch_size": 1024*8*4*2,                 #一个批次训练的样本数量
         "buffer_size": 100000,                    #每个看1000次，需要1亿次
-        "learning_rate": 0.0002,
+        "learning_rate": 0.00075,
         "action_noise": "ornstein_uhlenbeck",
-        "gradient_steps": 500,                    # 一共训练多少个批次
+        "gradient_steps": 50,                     # 一共训练多少个批次
         "policy_delay": 2,                        # critic训练多少次才训练actor一次
         "train_freq": (5000, "step"),             # 采样多少次训练一次
         "learning_starts": 10
@@ -162,33 +162,46 @@ if __name__ == "__main__":
 
     agent = DRLAgent(env=env_train)
 
-    model_ddpg_before_train = agent.get_model("td3", seed=46, model_kwargs=DDPG_PARAMS, policy_kwargs=POLICY_KWARGS)
+    model_ddpg_before_train = None
 
-    model_ddpg_after_train = agent.train_model(model=model_ddpg_before_train, tb_log_name='td3',total_timesteps=total_timesteps)
+    if os.path.exists("moneyMaker_sina.model"):
+        model_ddpg_before_train = SAC.load("moneyMaker_sina.model")
+        model_ddpg_before_train.set_env(env_train)
+        model_ddpg_before_train.load_replay_buffer("moneyMaker_replay_buffer_sina.pkl")
+        print("load moneyMaker")
+    else:
+        model_ddpg_before_train = agent.get_model("td3", seed=46, model_kwargs=DDPG_PARAMS, policy_kwargs=POLICY_KWARGS)
+        print("no moneyMaker")
 
-    env_kwargs_test = {
-        "stock_dim": stock_dimension,
-        "hmax": 10000,
-        "initial_amount": 1000000,
-        "buy_cost_pct": 6.87e-5,
-        "sell_cost_pct": 1.0687e-3,
-        "reward_scaling": 1e-1,
-        "state_space": state_space,
-        "action_space": stock_dimension,
-        "out_of_cash_penalty": 0.001,
-        "cash_limit": 0.2,
-        "mode":"test",                         #根据这个来决定是训练还是测试
-    }
+    for i in range(20):
+        print("start train")
+        model_ddpg_after_train = agent.train_model(model=model_ddpg_before_train, tb_log_name='td3',total_timesteps=total_timesteps)
+        print("end train")
+        model_ddpg_after_train.save("moneyMaker_sina.model")
+        model_ddpg_after_train.save_replay_buffer("moneyMaker_replay_buffer_sina.pkl")
 
-    e_trade_gym = StockTradingEnv(df=trade, **env_kwargs_test)
-    print("start test")
-    df_account_value, df_actions = DRLAgent.DRL_prediction(model=model_ddpg_after_train, environment=e_trade_gym)
-    print("end test")
-    df_actions.to_csv("action.csv", index=False)
-    df_account_value.to_csv("account.csv", index=False)
+        env_kwargs_test = {
+            "stock_dim": stock_dimension,
+            "hmax": 10000,
+            "initial_amount": 1000000,
+            "buy_cost_pct": 6.87e-5,
+            "sell_cost_pct": 1.0687e-3,
+            "reward_scaling": 1e-1,
+            "state_space": state_space,
+            "action_space": stock_dimension,
+            "out_of_cash_penalty": 0.001,
+            "cash_limit": 0.2,
+            "mode":"test",
+        }
+        e_trade_gym = StockTradingEnv(df=trade, **env_kwargs_test)
+        print("start test")
+        df_account_value, df_actions = DRLAgent.DRL_prediction(model=model_ddpg_after_train, environment=e_trade_gym)
+        print("end test")
+        df_actions.to_csv("action.csv", index=False)
+        df_account_value.to_csv("account.csv", index=False)
 
-    #把df_actions显示在图形上，与股价一起
-    draw_results(trade, df_actions, df_account_value)
+        #把df_actions显示在图形上，与股价一起
+        # #draw_results(trade, df_actions, df_account_value)
 
     print('sina end')
 
