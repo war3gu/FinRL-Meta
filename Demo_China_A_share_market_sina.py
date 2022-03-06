@@ -165,7 +165,7 @@ if __name__ == "__main__":
     model_ddpg_before_train = None
 
     if os.path.exists("moneyMaker_sina.model"):
-        model_ddpg_before_train = SAC.load("moneyMaker_sina.model")
+        model_ddpg_before_train = TD3.load("moneyMaker_sina.model")
         model_ddpg_before_train.set_env(env_train)
         model_ddpg_before_train.load_replay_buffer("moneyMaker_replay_buffer_sina.pkl")
         print("load moneyMaker")
