@@ -212,12 +212,18 @@ class StockTradingEnv(gym.Env):
         return total_assets
 
     def _update_state(self):
+        cash = self.cash/self.initial_amount
+
+        holds = np.array(self.holds)/100000
+
+        data0 = self.df.loc[0, :]
         data = self.df.loc[self.day, :]
-        close = data.close
+        close = np.array(data.close)/np.array(data0.close)
+
         state = np.hstack(
             (
-                self.cash,
-                self.holds,
+                cash,
+                holds,
                 close
             )
         )

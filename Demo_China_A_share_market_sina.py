@@ -148,7 +148,7 @@ if __name__ == "__main__":
         "learning_starts": 10
     }
 
-    POLICY_KWARGS = dict(net_arch=dict(pi=[256, 128, 128, 64, 64], qf=[256, 128, 128, 64, 64]))
+    POLICY_KWARGS = dict(net_arch=dict(pi=[256, 128, 128], qf=[256, 128, 128]))
 
     print("total_timesteps = {0}".format(total_timesteps))
 
