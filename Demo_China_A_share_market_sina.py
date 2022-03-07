@@ -111,8 +111,8 @@ if __name__ == "__main__":
     sina = sina1.append(sina2)
     sina = sina.sort_values(['date', "tic"], ignore_index=True)
 
-    train = ts_processor.data_split(sina, '2000-01-01', '2007-01-01')
-    trade = ts_processor.data_split(sina, '2007-01-01', '2008-03-19')
+    train = ts_processor.data_split(sina, '2000-01-01', '2002-01-01')        #短一些，方便训练
+    trade = ts_processor.data_split(sina, '2002-01-01', '2002-06-20')
 
     #draw_results(trade, None, None)
 
@@ -121,6 +121,7 @@ if __name__ == "__main__":
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
 
     total_timesteps = 500000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
+    #total_timesteps = 20000
 
     env_kwargs_train = {
         "stock_dim": stock_dimension,
@@ -173,7 +174,7 @@ if __name__ == "__main__":
         model_ddpg_before_train = agent.get_model("td3", seed=46, model_kwargs=DDPG_PARAMS, policy_kwargs=POLICY_KWARGS)
         print("no moneyMaker")
 
-    for i in range(20):
+    for i in range(200):
         print("start train")
         model_ddpg_after_train = agent.train_model(model=model_ddpg_before_train, tb_log_name='td3',total_timesteps=total_timesteps)
         print("end train")
@@ -186,7 +187,7 @@ if __name__ == "__main__":
             "initial_amount": 1000000,
             "buy_cost_pct": 6.87e-5,
             "sell_cost_pct": 1.0687e-3,
-            "reward_scaling": 1e-1,
+            "reward_scaling": 1e0,
             "state_space": state_space,
             "action_space": stock_dimension,
             "out_of_cash_penalty": 0.001,
