@@ -129,7 +129,7 @@ if __name__ == "__main__":
         "initial_amount": 1000000,                            #多准备点金钱，让ai能够频繁买卖
         "buy_cost_pct": 6.87e-5,
         "sell_cost_pct": 1.0687e-3,
-        "reward_scaling": 1e0,
+        "reward_scaling": 1e-4,
         "state_space": state_space,
         "action_space": stock_dimension,
         "out_of_cash_penalty": 0.001,
@@ -168,6 +168,13 @@ if __name__ == "__main__":
     if os.path.exists("moneyMaker_sina.model"):
         model_ddpg_before_train = TD3.load("moneyMaker_sina.model")
         model_ddpg_before_train.set_env(env_train)
+        dict = model_ddpg_before_train.get_parameters()
+
+        dict['actor.optimizer']['param_groups'][0]['lr'] = 0.0001           #loss无法下降，修改一下lr试试
+        dict['critic.optimizer']['param_groups'][0]['lr'] = 0.0001
+
+        model_ddpg_before_train.set_parameters(dict)
+
         model_ddpg_before_train.load_replay_buffer("moneyMaker_replay_buffer_sina.pkl")
         print("load moneyMaker")
     else:
@@ -187,7 +194,7 @@ if __name__ == "__main__":
             "initial_amount": 1000000,
             "buy_cost_pct": 6.87e-5,
             "sell_cost_pct": 1.0687e-3,
-            "reward_scaling": 1e0,
+            "reward_scaling": 1e-4,
             "state_space": state_space,
             "action_space": stock_dimension,
             "out_of_cash_penalty": 0.001,
