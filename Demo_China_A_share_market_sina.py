@@ -166,14 +166,15 @@ if __name__ == "__main__":
     model_ddpg_before_train = None
 
     if os.path.exists("moneyMaker_sina.model"):
-        model_ddpg_before_train = TD3.load("moneyMaker_sina.model")
+        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate':0.0001}) #必须在此处修改lr
         model_ddpg_before_train.set_env(env_train)
-        dict = model_ddpg_before_train.get_parameters()
 
-        dict['actor.optimizer']['param_groups'][0]['lr'] = 0.0001           #loss无法下降，修改一下lr试试
-        dict['critic.optimizer']['param_groups'][0]['lr'] = 0.0001
+        #dict = model_ddpg_before_train.get_parameters()
 
-        model_ddpg_before_train.set_parameters(dict)
+        #dict['actor.optimizer']['param_groups'][0]['lr'] = 0.0001           #loss无法下降，修改一下lr试试
+        #dict['critic.optimizer']['param_groups'][0]['lr'] = 0.0001
+
+        #model_ddpg_before_train.set_parameters(dict)
 
         model_ddpg_before_train.load_replay_buffer("moneyMaker_replay_buffer_sina.pkl")
         print("load moneyMaker")
