@@ -148,7 +148,7 @@ if __name__ == "__main__":
         "learning_starts": 10
     }
 
-    POLICY_KWARGS = dict(net_arch=dict(pi=[256, 128, 128], qf=[256, 128, 128]))
+    POLICY_KWARGS = dict(net_arch=dict(pi=[16, 128, 16], qf=[16, 128, 16]))
 
     print("total_timesteps = {0}".format(total_timesteps))
 
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     model_ddpg_before_train = None
 
     if os.path.exists("moneyMaker_sina.model"):
-        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate':0.0001}) #必须在此处修改lr
+        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate':0.00075}) #必须在此处修改lr
         model_ddpg_before_train.set_env(env_train)
 
         #dict = model_ddpg_before_train.get_parameters()
