@@ -163,7 +163,7 @@ class StockTradingEnv(gym.Env):
             count_non0 = np.count_nonzero(actions)
             if count_non0 == 0:
                 self.count_0 += 1
-                if self.count_0 > 70:                  #这个极限值可以越来越大
+                if self.count_0 > 200:                  #0.99的200次方是0.13，以后把gamma设置小点
                     terminal = True
                     print('terminal by hand')
             else:
