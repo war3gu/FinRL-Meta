@@ -82,8 +82,32 @@ class StockTradingEnv(gym.Env):
         self.date_memory.append(self._get_date())
         self.asset_memory.append(self.cash)
 
+        if self.mode == 'train':
+            ran = random.random()
+            if ran > 0.5:
+                self._initial_buy_()
+
         state = self._update_state()
         return state
+
+    def _initial_buy_(self):
+        """Initialize the state, already bought some"""
+        data = self.df.loc[self.day, :]
+        prices = data.close.values.tolist()
+        avg_price = sum(prices)/len(prices)
+        buy_nums_each_tic = 0.3*self.initial_amount//(avg_price*len(prices))  # only use half of the initial amount
+        buy_nums_each_tic = buy_nums_each_tic//100*100
+        cost = sum(prices)*buy_nums_each_tic
+
+        self.cash = self.cash - cost
+        self.holds = [buy_nums_each_tic]*self.stock_dim
+
+        '''
+        state = [self.initial_amount-cost] + \
+                self.data.close.values.tolist() + \
+                [buy_nums_each_tic]*self.stock_dim  + \
+                sum([self.data[tech].values.tolist() for tech in self.tech_indicator_list ], [])
+        '''
 
     def step(self, actions):
         #print('step')

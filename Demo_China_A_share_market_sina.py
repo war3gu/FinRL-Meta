@@ -142,13 +142,13 @@ if __name__ == "__main__":
         "buffer_size": 100000,                    #每个看1000次，需要1亿次
         "learning_rate": 0.00075,
         "action_noise": "ornstein_uhlenbeck",
-        "gradient_steps": 50,                     # 一共训练多少个批次
+        "gradient_steps": 100,                     # 一共训练多少个批次
         "policy_delay": 2,                        # critic训练多少次才训练actor一次
         "train_freq": (5000, "step"),             # 采样多少次训练一次
         "learning_starts": 10
     }
 
-    POLICY_KWARGS = dict(net_arch=dict(pi=[16, 128, 16], qf=[16, 128, 16]))
+    POLICY_KWARGS = dict(net_arch=dict(pi=[32, 128, 32], qf=[32, 128, 32]))
 
     print("total_timesteps = {0}".format(total_timesteps))
 
