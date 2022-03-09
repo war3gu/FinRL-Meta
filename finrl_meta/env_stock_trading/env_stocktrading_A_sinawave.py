@@ -56,6 +56,7 @@ class StockTradingEnv(gym.Env):
         self.cash = self.initial_amount                         #现金
         self.holds = [0]*self.stock_dim                         #持仓
         self.cost = 0
+        self.count_0 = 0                                        #为了提高采样的质量，记录无操作的次数
 
         self.actions_memory=[]
         self.date_memory=[]
@@ -74,6 +75,7 @@ class StockTradingEnv(gym.Env):
         self.cash = self.initial_amount                         #现金
         self.holds = [0]*self.stock_dim                         #持仓
         self.cost = 0
+        self.count_0 = 0
 
         self.actions_memory=[]
         self.date_memory=[]
@@ -156,6 +158,16 @@ class StockTradingEnv(gym.Env):
             penalty2 = self.initial_amount*self.out_of_cash_penalty
         reward -= penalty2
         '''
+
+        if self.mode == 'train':                       #为了加快采样的有效率。当loss降到一定程度，可以把这块代码注释掉
+            count_non0 = np.count_nonzero(actions)
+            if count_non0 == 0:
+                self.count_0 += 1
+                if self.count_0 > 70:                  #这个极限值可以越来越大
+                    terminal = True
+                    print('terminal by hand')
+            else:
+                self.count_0 = 0
 
         reward = reward * self.reward_scaling
 
