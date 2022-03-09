@@ -86,7 +86,7 @@ class StockTradingEnv(gym.Env):
 
         if self.mode == 'train':
             ran = random.random()
-            if ran > 0.5:
+            if ran > 0.1:
                 self._initial_buy_()
 
         state = self._update_state()
@@ -97,7 +97,7 @@ class StockTradingEnv(gym.Env):
         data = self.df.loc[self.day, :]
         prices = data.close.values.tolist()
         avg_price = sum(prices)/len(prices)
-        buy_nums_each_tic = 0.3*self.initial_amount//(avg_price*len(prices))  # only use half of the initial amount
+        buy_nums_each_tic = 0.8*self.initial_amount//(avg_price*len(prices))  # only use half of the initial amount
         buy_nums_each_tic = buy_nums_each_tic//100*100
         cost = sum(prices)*buy_nums_each_tic
 
