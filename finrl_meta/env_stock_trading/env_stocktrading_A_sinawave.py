@@ -66,7 +66,7 @@ class StockTradingEnv(gym.Env):
     def reset(self):
         if self.mode == 'train':
             lll = len(self.df.date.unique())
-            length = int(lll*0.01)
+            length = int(lll*0.99)
             day_start = random.choice(range(length))
             self.day_start = day_start
         else:
@@ -97,7 +97,7 @@ class StockTradingEnv(gym.Env):
         data = self.df.loc[self.day, :]
         prices = data.close.values.tolist()
         avg_price = sum(prices)/len(prices)
-        buy_nums_each_tic = 0.8*self.initial_amount//(avg_price*len(prices))  # only use half of the initial amount
+        buy_nums_each_tic = 0.5*self.initial_amount//(avg_price*len(prices))  # only use half of the initial amount
         buy_nums_each_tic = buy_nums_each_tic//100*100
         cost = sum(prices)*buy_nums_each_tic
 
@@ -164,7 +164,7 @@ class StockTradingEnv(gym.Env):
             if count_non0 == 0:
                 self.count_0 += 1
                 day_pass = self.day - self.day_start
-                if self.count_0/day_pass > 0.5:                           #0.99的200次方是0.13，以后把gamma设置小点
+                if self.count_0 > 30:                           #0.99的200次方是0.13，以后把gamma设置小点
                     terminal = True
                     print('terminal by hand')
             else:

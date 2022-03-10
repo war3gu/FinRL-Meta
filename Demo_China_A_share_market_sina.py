@@ -166,7 +166,7 @@ if __name__ == "__main__":
     model_ddpg_before_train = None
 
     if os.path.exists("moneyMaker_sina.model"):
-        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate':0.00075}) #必须在此处修改lr
+        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate':0.00075, "batch_size": 1024, "train_freq": (500, "step"),}) #必须在此处修改lr
         model_ddpg_before_train.set_env(env_train)
 
         #dict = model_ddpg_before_train.get_parameters()
