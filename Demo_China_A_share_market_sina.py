@@ -138,17 +138,17 @@ if __name__ == "__main__":
     }
 
     DDPG_PARAMS = {
-        "batch_size": 1024*8*4*2,                 #一个批次训练的样本数量
+        "batch_size": 1024,                 #一个批次训练的样本数量
         "buffer_size": 100000,                    #每个看1000次，需要1亿次
         "learning_rate": 0.00075,
         "action_noise": "ornstein_uhlenbeck",
-        "gradient_steps": 100,                     # 一共训练多少个批次
+        "gradient_steps": 500,                     # 一共训练多少个批次
         "policy_delay": 2,                        # critic训练多少次才训练actor一次
-        "train_freq": (5000, "step"),             # 采样多少次训练一次
+        "train_freq": (500, "step"),             # 采样多少次训练一次
         "learning_starts": 10
     }
 
-    POLICY_KWARGS = dict(net_arch=dict(pi=[32, 128, 32], qf=[32, 128, 32]))
+    POLICY_KWARGS = dict(net_arch=dict(pi=[256, 256, 256], qf=[256, 256, 256]))
 
     print("total_timesteps = {0}".format(total_timesteps))
 
