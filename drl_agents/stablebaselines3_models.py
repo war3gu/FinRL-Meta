@@ -83,7 +83,7 @@ class DRLAgent:
         if "action_noise" in model_kwargs:
             n_actions = self.env.action_space.shape[-1]
             model_kwargs["action_noise"] = NOISE[model_kwargs["action_noise"]](
-                mean=np.zeros(n_actions), sigma=1 * np.ones(n_actions)
+                mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions)
             )
         print(model_kwargs)
         model = MODELS[model_name](

@@ -97,7 +97,8 @@ class StockTradingEnv(gym.Env):
         data = self.df.loc[self.day, :]
         prices = data.close.values.tolist()
         avg_price = sum(prices)/len(prices)
-        buy_nums_each_tic = 0.5*self.initial_amount//(avg_price*len(prices))  # only use half of the initial amount
+        ran = random.random()                 #随机买。因为开始日期是随机的，initial_amount也可以是随机的。
+        buy_nums_each_tic = ran*self.initial_amount//(avg_price*len(prices))  # only use half of the initial amount
         buy_nums_each_tic = buy_nums_each_tic//100*100
         cost = sum(prices)*buy_nums_each_tic
 
@@ -158,17 +159,19 @@ class StockTradingEnv(gym.Env):
             penalty2 = self.initial_amount*self.out_of_cash_penalty
         reward -= penalty2
         '''
-
+        
+        '''
         if self.mode == 'train':                       #为了加快采样的有效率。当loss降到一定程度，可以把这块代码注释掉
             count_non0 = np.count_nonzero(actions)
             if count_non0 == 0:
                 self.count_0 += 1
                 day_pass = self.day - self.day_start
-                if self.count_0 > 30:                           #0.99的200次方是0.13，以后把gamma设置小点
+                if self.count_0 > 200:                           #0.99的200次方是0.13，以后把gamma设置小点
                     terminal = True
                     print('terminal by hand')
             else:
                 self.count_0 = 0
+        '''
 
         reward = reward * self.reward_scaling
 
