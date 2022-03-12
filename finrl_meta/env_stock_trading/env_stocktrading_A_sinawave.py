@@ -72,7 +72,9 @@ class StockTradingEnv(gym.Env):
         else:
             self.day_start = 0
         self.day = self.day_start
-        self.cash = self.initial_amount                         #现金
+
+        self.cash = self.initial_amount                         #现金.如果是train，应该根据域范围随机得到
+
         self.holds = [0]*self.stock_dim                         #持仓
         self.cost = 0
         self.count_0 = 0
@@ -85,20 +87,32 @@ class StockTradingEnv(gym.Env):
         self.asset_memory.append(self.cash)
 
         if self.mode == 'train':
-            ran = random.random()
-            if ran > 0.1:
-                self._initial_buy_()
+            self._initial_cash_and_buy_()
 
         state = self._update_state()
         return state
 
-    def _initial_buy_(self):
+    def _initial_cash_and_buy_(self):
         """Initialize the state, already bought some"""
         data = self.df.loc[self.day, :]
+
+        cash_max = max(data.cash_max)
+        cash_min = min(data.cash_min)
+
+        if cash_max > 10000*10:
+            cash_max = 10000*10
+        if cash_min < 10000*0.1:
+            cash_min = 10000*0.1
+
+        cash_u = random.uniform(cash_min, cash_max)
+
+        self.cash = self.initial_amount/10000 * cash_u
+
+
         prices = data.close.values.tolist()
         avg_price = sum(prices)/len(prices)
-        ran = random.random()                 #随机买。因为开始日期是随机的，initial_amount也可以是随机的。
-        buy_nums_each_tic = ran*self.initial_amount//(avg_price*len(prices))  # only use half of the initial amount
+        ran = random.random()                 #随机买。因为开始日期是随机的，initial_amount也可以是随机的。需要新加域，表明当前的cash范围,然后在范围内随机一个值
+        buy_nums_each_tic = ran*self.cash//(avg_price*len(prices))  # only use half of the initial amount
         buy_nums_each_tic = buy_nums_each_tic//100*100
         cost = sum(prices)*buy_nums_each_tic
 

@@ -101,6 +101,47 @@ plt.legend(['phase 0', 'phase 30', 'phase 60', 'phase 90', 'add'], loc=1)
 plt.show()
 '''
 
+
+
+def expandTrain(train):
+    print('expandTrain')
+    train_expand = None
+    train.insert(train.shape[1], 'cash_max', 10000)
+    train.insert(train.shape[1], 'cash_min', 10000)
+    tic_all = train.tic.unique()
+
+    for tic in tic_all:
+        lines = train.loc[train['tic'] == tic]
+        line_last = None
+        list_all = []
+        for index,line in lines.iterrows():
+            if line_last is None:
+                line['cash_max'] = 10000
+                line['cash_min'] = 10000
+            else:
+                line['cash_max'] = line_last['cash_max']
+                line['cash_min'] = line_last['cash_min']
+                if line['close'] > line_last['close']:
+                    line['cash_max'] *= line['close']/line_last['close']
+                    #print('bigger')
+                else:
+                    line['cash_min'] *= line['close']/line_last['close']
+                    #print('smaller')
+            list_all.append(line)
+            line_last = line
+        df_all = pd.DataFrame(list_all)
+        if train_expand is None:
+            train_expand = df_all
+        else:
+            train_expand = train_expand.append(df_all)
+
+    #train_expand = pd.DataFrame(list_all)
+    train_expand = train_expand.sort_values(['date', "tic"], ignore_index=False)
+    print('expandTrain_end')
+    return train_expand
+
+
+
 if __name__ == "__main__":
     __spec__ = "ModuleSpec(name='builtins', loader=<class '_frozen_importlib.BuiltinImporter'>)"
     token = '27080ec403c0218f96f388bca1b1d85329d563c91a43672239619ef5'
@@ -113,6 +154,8 @@ if __name__ == "__main__":
 
     train = ts_processor.data_split(sina, '2000-01-01', '2002-01-01')        #短一些，方便训练
     trade = ts_processor.data_split(sina, '2002-01-01', '2002-06-20')
+
+    train = expandTrain(train)
 
     #draw_results(trade, None, None)
 
