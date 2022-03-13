@@ -152,8 +152,8 @@ if __name__ == "__main__":
     sina = sina1.append(sina2)
     sina = sina.sort_values(['date', "tic"], ignore_index=True)
 
-    train = ts_processor.data_split(sina, '2000-01-01', '2002-01-01')        #短一些，方便训练
-    trade = ts_processor.data_split(sina, '2002-01-01', '2002-06-20')
+    train = ts_processor.data_split(sina, '2000-01-01', '2000-06-01')        #短一些，方便训练
+    trade = ts_processor.data_split(sina, '2000-06-01', '2000-09-01')
 
     train = expandTrain(train)
 
@@ -169,10 +169,10 @@ if __name__ == "__main__":
     env_kwargs_train = {
         "stock_dim": stock_dimension,
         "hmax": 10000,
-        "initial_amount": 1000000,                            #多准备点金钱，让ai能够频繁买卖
+        "initial_amount": 10000000,                            #多准备点金钱，让ai能够频繁买卖.训练过程中可以慢慢降低这个值
         "buy_cost_pct": 6.87e-5,
         "sell_cost_pct": 1.0687e-3,
-        "reward_scaling": 1e-4,
+        "reward_scaling": 1e-5,
         "state_space": state_space,
         "action_space": stock_dimension,
         "out_of_cash_penalty": 0.001,
@@ -181,13 +181,13 @@ if __name__ == "__main__":
     }
 
     DDPG_PARAMS = {
-        "batch_size": 1024,                 #一个批次训练的样本数量
+        "batch_size": 1024*8,                 #一个批次训练的样本数量
         "buffer_size": 100000,                    #每个看1000次，需要1亿次
         "learning_rate": 0.00075,
         "action_noise": "ornstein_uhlenbeck",
-        "gradient_steps": 500,                     # 一共训练多少个批次
+        "gradient_steps": 1000,                     # 一共训练多少个批次
         "policy_delay": 2,                        # critic训练多少次才训练actor一次
-        "train_freq": (500, "step"),             # 采样多少次训练一次
+        "train_freq": (5000, "step"),             # 采样多少次训练一次
         "learning_starts": 10
     }
 
@@ -209,7 +209,7 @@ if __name__ == "__main__":
     model_ddpg_before_train = None
 
     if os.path.exists("moneyMaker_sina.model"):
-        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate':0.00075, "batch_size": 1024, "train_freq": (500, "step"),}) #必须在此处修改lr
+        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate':0.00075, "batch_size": 1024*8, "train_freq": (5000, "step"),}) #必须在此处修改lr
         model_ddpg_before_train.set_env(env_train)
 
         #dict = model_ddpg_before_train.get_parameters()

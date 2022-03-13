@@ -68,7 +68,7 @@ class StockTradingEnv(gym.Env):
             lll = len(self.df.date.unique())
             length = int(lll*0.99)
             day_start = random.choice(range(length))
-            self.day_start = day_start
+            self.day_start = 0
         else:
             self.day_start = 0
         self.day = self.day_start
@@ -96,6 +96,7 @@ class StockTradingEnv(gym.Env):
         """Initialize the state, already bought some"""
         data = self.df.loc[self.day, :]
 
+        '''
         cash_max = max(data.cash_max)
         cash_min = min(data.cash_min)
 
@@ -107,6 +108,7 @@ class StockTradingEnv(gym.Env):
         cash_u = random.uniform(cash_min, cash_max)
 
         self.cash = self.initial_amount/10000 * cash_u
+        '''
 
 
         prices = data.close.values.tolist()
