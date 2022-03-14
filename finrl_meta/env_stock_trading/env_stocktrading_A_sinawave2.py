@@ -82,9 +82,11 @@ class StockTradingEnv(gym.Env):
         self.actions_memory=[]
         self.date_memory=[]
         self.asset_memory=[]
+        self.cash_memory = []
 
         self.date_memory.append(self._get_date())
         self.asset_memory.append(self.cash)
+        self.cash_memory.append(self.cash)
 
         #if self.mode == 'train':
             #self._initial_cash_and_buy_()
@@ -162,8 +164,9 @@ class StockTradingEnv(gym.Env):
 
         terminal = self.day >= len(self.df.index.unique())-1
 
-        #if terminal == True:
-            #print('hahahaha')
+        if terminal == True:  #统计非0的操作数量
+            count_non0 = np.count_nonzero(self.actions_memory)
+            print('no zero count {0} mode {1}'.format(count_non0, self.mode))
 
 
         state = self._update_state()                               #新的一天，close和技术指标都变了
@@ -173,6 +176,7 @@ class StockTradingEnv(gym.Env):
         self.actions_memory.append(actions)
         self.date_memory.append(self._get_date())
         self.asset_memory.append(end_total_asset)
+        self.cash_memory.append(self.cash)
 
         reward = end_total_asset - begin_total_asset                #总资产差就是reward
 
@@ -313,8 +317,9 @@ class StockTradingEnv(gym.Env):
     def save_asset_memory(self):
         date_list = self.date_memory
         asset_list = self.asset_memory
+        cash_list = self.cash_memory
 
-        df_account_value = pd.DataFrame({'date':date_list,'account_value':asset_list})
+        df_account_value = pd.DataFrame({'date':date_list,'account_value':asset_list, 'cash':cash_list})
         return df_account_value
 
     def save_action_memory(self):
