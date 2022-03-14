@@ -86,8 +86,8 @@ class StockTradingEnv(gym.Env):
         self.date_memory.append(self._get_date())
         self.asset_memory.append(self.cash)
 
-        if self.mode == 'train':
-            self._initial_cash_and_buy_()
+        #if self.mode == 'train':
+            #self._initial_cash_and_buy_()
 
         state = self._update_state()
         return state
