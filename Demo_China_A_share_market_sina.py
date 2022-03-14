@@ -17,7 +17,7 @@ display.set_matplotlib_formats("svg")
 
 from finrl_meta import config
 from finrl_meta.data_processors.processor_tusharepro import TushareProProcessor, ReturnPlotter
-from finrl_meta.env_stock_trading.env_stocktrading_A_sinawave import StockTradingEnv
+from finrl_meta.env_stock_trading.env_stocktrading_A_sinawave2 import StockTradingEnv
 from drl_agents.stablebaselines3_models import DRLAgent
 
 pd.options.display.max_columns = None
@@ -160,7 +160,7 @@ if __name__ == "__main__":
     #draw_results(trade, None, None)
 
     stock_dimension = len(train.tic.unique())
-    state_space = 1 + stock_dimension + stock_dimension   # 现金，持仓，股价
+    state_space = 1 + stock_dimension*2 + stock_dimension   # 现金,持仓*2，股价
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
 
     total_timesteps = 500000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
@@ -169,10 +169,10 @@ if __name__ == "__main__":
     env_kwargs_train = {
         "stock_dim": stock_dimension,
         "hmax": 10000,
-        "initial_amount": 10000000,                            #多准备点金钱，让ai能够频繁买卖.训练过程中可以慢慢降低这个值
+        "initial_amount": 1000000,                            #多准备点金钱，让ai能够频繁买卖.训练过程中可以慢慢降低这个值
         "buy_cost_pct": 6.87e-5,
         "sell_cost_pct": 1.0687e-3,
-        "reward_scaling": 1e-5,
+        "reward_scaling": 1e-4,
         "state_space": state_space,
         "action_space": stock_dimension,
         "out_of_cash_penalty": 0.001,
