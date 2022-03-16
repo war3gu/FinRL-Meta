@@ -66,9 +66,9 @@ class StockTradingEnv(gym.Env):
     def reset(self):
         if self.mode == 'train':
             lll = len(self.df.date.unique())
-            length = int(lll*0.99)
+            length = int(lll*0.95)
             day_start = random.choice(range(length))
-            self.day_start = 0
+            self.day_start = day_start
         else:
             self.day_start = 0
         self.day = self.day_start
@@ -166,7 +166,7 @@ class StockTradingEnv(gym.Env):
 
         if terminal == True:  #统计非0的操作数量
             count_non0 = np.count_nonzero(self.actions_memory)
-            print('no zero count {0} mode {1}'.format(count_non0, self.mode))
+            #print('no zero count {0} mode {1}'.format(count_non0, self.mode))
 
 
         state = self._update_state()                               #新的一天，close和技术指标都变了

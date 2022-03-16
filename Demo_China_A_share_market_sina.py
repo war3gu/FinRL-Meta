@@ -152,8 +152,8 @@ if __name__ == "__main__":
     sina = sina1.append(sina2)
     sina = sina.sort_values(['date', "tic"], ignore_index=True)
 
-    train = ts_processor.data_split(sina, '2000-01-01', '2000-06-01')        #短一些，方便训练
-    trade = ts_processor.data_split(sina, '2000-06-01', '2000-09-01')
+    train = ts_processor.data_split(sina, '2000-01-01', '2000-02-20')        #短一些，方便训练
+    trade = ts_processor.data_split(sina, '2000-03-09', '2000-04-09')
 
     train = expandTrain(train)
 
