@@ -185,13 +185,13 @@ if __name__ == "__main__":
         "buffer_size": 100000,                    #每个看1000次，需要1亿次
         "learning_rate": 0.00075,
         "action_noise": "ornstein_uhlenbeck",
-        "gradient_steps": 10000,                     # 一共训练多少个批次
+        "gradient_steps": 5000,                     # 一共训练多少个批次
         "policy_delay": 2,                        # critic训练多少次才训练actor一次
-        "train_freq": (5000, "step"),             # 采样多少次训练一次
+        "train_freq": (2500, "step"),             # 采样多少次训练一次
         "learning_starts": 10
     }
 
-    POLICY_KWARGS = dict(net_arch=dict(pi=[256, 256, 256], qf=[256, 256, 256]))
+    POLICY_KWARGS = dict(net_arch=dict(pi=[1024, 1024, 1024], qf=[1024, 1024, 1024]))
 
     print("total_timesteps = {0}".format(total_timesteps))
 
@@ -209,7 +209,7 @@ if __name__ == "__main__":
     model_ddpg_before_train = None
 
     if os.path.exists("moneyMaker_sina.model"):
-        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate':0.00035, "batch_size": 1024*8, "train_freq": (2500, "step"), "gradient_steps": 5000}) #必须在此处修改lr
+        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate':0.00075, "batch_size": 1024*8, "train_freq": (2500, "step"), "gradient_steps": 5000}) #必须在此处修改lr
         model_ddpg_before_train.set_env(env_train)
 
         #dict = model_ddpg_before_train.get_parameters()
