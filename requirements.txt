@@ -40,3 +40,9 @@ pre-commit
 
 # FinRL-meta
 pandas_market_calendars==3.2
+
+tushare
+talib-binary
+finrl
+torchsummary
+pyyaml==3.12

@@ -71,6 +71,8 @@ class StockTradingEnv(gym.Env):
             self.day_start = day_start
         else:
             self.day_start = 0
+
+        print("day_start {0}".format(self.day_start))
         self.day = self.day_start
 
         self.cash = self.initial_amount                         #现金.如果是train，应该根据域范围随机得到
@@ -137,6 +139,10 @@ class StockTradingEnv(gym.Env):
         #actions = actions * self.hmax #actions initially is scaled between 0 to 1
         #actions = (actions.astype(int)) #convert into integer because we can't by fraction of shares
 
+        actions_old = None
+        if self.mode == 'test':
+            actions_old = actions.copy()
+
         begin_total_asset = self._update_total_assets()
 
         stocks_can_buy = self._get_can_buy()
@@ -173,10 +179,12 @@ class StockTradingEnv(gym.Env):
 
         end_total_asset = self._update_total_assets()
 
-        self.actions_memory.append(actions)
-        self.date_memory.append(self._get_date())
-        self.asset_memory.append(end_total_asset)
-        self.cash_memory.append(self.cash)
+        if self.mode == 'test':
+            actions_all = np.hstack((actions, actions_old))
+            self.actions_memory.append(actions_all)
+            self.date_memory.append(self._get_date())
+            self.asset_memory.append(end_total_asset)
+            self.cash_memory.append(self.cash)
 
         reward = end_total_asset - begin_total_asset                #总资产差就是reward
 

@@ -35,6 +35,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 #matplotlib.use('TKAgg')
 import numpy as np
+import torch
+from torchsummary import summary
 
 print("ALL Modules have been imported!")
 
@@ -43,6 +45,8 @@ print("ALL Modules have been imported!")
 import os
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
+print('Using GPU:', torch.cuda.get_device_name('cuda'))
 
 def convert(action):
     if action[0] == 0 and action[1] == 0:
@@ -163,7 +167,7 @@ if __name__ == "__main__":
     state_space = 1 + stock_dimension*2 + stock_dimension   # 现金,持仓*2，股价
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
 
-    total_timesteps = 250000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
+    total_timesteps = 3000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
     #total_timesteps = 20000
 
     env_kwargs_train = {
@@ -181,13 +185,13 @@ if __name__ == "__main__":
     }
 
     DDPG_PARAMS = {
-        "batch_size": 1024*8,                 #一个批次训练的样本数量
-        "buffer_size": 100000,                    #每个看1000次，需要1亿次
+        "batch_size": 1024,                 #一个批次训练的样本数量
+        "buffer_size": 10000,                    #每个看1000次，需要1亿次
         "learning_rate": 0.00075,
         "action_noise": "ornstein_uhlenbeck",
-        "gradient_steps": 5000,                     # 一共训练多少个批次
+        "gradient_steps": 10,                     # 一共训练多少个批次
         "policy_delay": 2,                        # critic训练多少次才训练actor一次
-        "train_freq": (2500, "step"),             # 采样多少次训练一次
+        "train_freq": (200, "step"),             # 采样多少次训练一次
         "learning_starts": 10
     }
 
@@ -209,7 +213,7 @@ if __name__ == "__main__":
     model_ddpg_before_train = None
 
     if os.path.exists("moneyMaker_sina.model"):
-        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate':0.00075, "batch_size": 1024*8, "train_freq": (2500, "step"), "gradient_steps": 5000}) #必须在此处修改lr
+        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate':0.00075, "batch_size": 1024, "train_freq": (200, "step"), "gradient_steps": 10}) #必须在此处修改lr
         model_ddpg_before_train.set_env(env_train)
 
         #dict = model_ddpg_before_train.get_parameters()
@@ -225,7 +229,9 @@ if __name__ == "__main__":
         model_ddpg_before_train = agent.get_model("td3", seed=46, model_kwargs=DDPG_PARAMS, policy_kwargs=POLICY_KWARGS)
         print("no moneyMaker")
 
-    for i in range(200):
+        summary(model_ddpg_before_train.actor, input_size=(1, 1, state_space), batch_size=-1)
+
+    for i in range(20000):
         print("start train")
         model_ddpg_after_train = agent.train_model(model=model_ddpg_before_train, tb_log_name='td3',total_timesteps=total_timesteps)
         print("end train")
