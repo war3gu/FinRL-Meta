@@ -102,6 +102,7 @@ class DRLAgent:
             total_timesteps=total_timesteps,
             tb_log_name=tb_log_name,
             callback=TensorboardCallback(),
+            reset_num_timesteps=False,
         )
         return model
 

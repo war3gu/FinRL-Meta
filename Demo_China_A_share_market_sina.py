@@ -167,8 +167,8 @@ if __name__ == "__main__":
     state_space = 1 + stock_dimension*2 + stock_dimension   # 现金,持仓*2，股价
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
 
-    total_timesteps = 3000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
-    #total_timesteps = 20000
+    total_timesteps = 30000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
+    #total_timesteps = 2000
 
     env_kwargs_train = {
         "stock_dim": stock_dimension,
