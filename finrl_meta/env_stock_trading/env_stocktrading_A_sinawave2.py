@@ -287,6 +287,9 @@ class StockTradingEnv(gym.Env):
         return total_assets
 
     def _update_state(self):
+
+        days_left = self._get_days_left()
+
         cash = self.cash/self.initial_amount
 
         holds = np.array(self.holds)/10000
@@ -299,6 +302,7 @@ class StockTradingEnv(gym.Env):
 
         state = np.hstack(
             (
+                days_left,
                 cash,
                 stock_can_buy,
                 -holds,
@@ -306,6 +310,11 @@ class StockTradingEnv(gym.Env):
             )
         )
         return state
+
+    def _get_days_left(self):
+        day_length = len(self.df.date.unique())
+        days_left = day_length - self.day
+        return days_left
 
     def _get_can_buy(self):
         cash_avrage = self.cash/self.stock_dim
