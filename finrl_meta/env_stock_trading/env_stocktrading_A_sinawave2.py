@@ -68,7 +68,7 @@ class StockTradingEnv(gym.Env):
             lll = len(self.df.date.unique())
             length = int(lll*0.95)
             day_start = random.choice(range(length))
-            self.day_start = day_start
+            self.day_start = 0
         else:
             self.day_start = 0
 

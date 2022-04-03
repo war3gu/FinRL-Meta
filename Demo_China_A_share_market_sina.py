@@ -167,7 +167,7 @@ if __name__ == "__main__":
     state_space = 1 + stock_dimension*2 + stock_dimension   # 现金,持仓*2，股价
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
 
-    total_timesteps = 30000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
+    total_timesteps = 50000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
     #total_timesteps = 2000
 
     env_kwargs_train = {
@@ -176,7 +176,7 @@ if __name__ == "__main__":
         "initial_amount": 1000000,                            #多准备点金钱，让ai能够频繁买卖.训练过程中可以慢慢降低这个值
         "buy_cost_pct": 6.87e-5,
         "sell_cost_pct": 1.0687e-3,
-        "reward_scaling": 1e-4,
+        "reward_scaling": 1e-2,
         "state_space": state_space,
         "action_space": stock_dimension,
         "out_of_cash_penalty": 0.001,
@@ -185,17 +185,18 @@ if __name__ == "__main__":
     }
 
     DDPG_PARAMS = {
-        "batch_size": 1024,                 #一个批次训练的样本数量
-        "buffer_size": 10000,                    #每个看1000次，需要1亿次
-        "learning_rate": 0.00075,
+        "batch_size": 64,                 #一个批次训练的样本数量
+        "buffer_size": 5000,                    #每个看1000次，需要1亿次
+        "learning_rate": 0.00025,
         "action_noise": "ornstein_uhlenbeck",
-        "gradient_steps": 10,                     # 一共训练多少个批次
+        "gradient_steps": 100,                     # 一共训练多少个批次,1 - beta1 ** step
         "policy_delay": 2,                        # critic训练多少次才训练actor一次
         "train_freq": (200, "step"),             # 采样多少次训练一次
         "learning_starts": 10
     }
 
-    POLICY_KWARGS = dict(net_arch=dict(pi=[1024, 1024, 1024], qf=[1024, 1024, 1024]))
+    POLICY_KWARGS = dict(net_arch=dict(pi=[64, 256, 256, 256, 64], qf=[64, 256, 256, 256, 64]),
+                         optimizer_kwargs=dict(weight_decay=0, amsgrad=False, betas=[0.95, 0.99]))
 
     print("total_timesteps = {0}".format(total_timesteps))
 
@@ -213,7 +214,7 @@ if __name__ == "__main__":
     model_ddpg_before_train = None
 
     if os.path.exists("moneyMaker_sina.model"):
-        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate':0.00075, "batch_size": 1024, "train_freq": (200, "step"), "gradient_steps": 10}) #必须在此处修改lr
+        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate':0.00025, "batch_size": 64, "train_freq": (200, "step"), "gradient_steps": 100}) #必须在此处修改lr
         model_ddpg_before_train.set_env(env_train)
 
         #dict = model_ddpg_before_train.get_parameters()
@@ -244,7 +245,7 @@ if __name__ == "__main__":
             "initial_amount": 1000000,
             "buy_cost_pct": 6.87e-5,
             "sell_cost_pct": 1.0687e-3,
-            "reward_scaling": 1e-4,
+            "reward_scaling": 1e-2,
             "state_space": state_space,
             "action_space": stock_dimension,
             "out_of_cash_penalty": 0.001,
