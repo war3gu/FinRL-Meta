@@ -17,7 +17,7 @@ display.set_matplotlib_formats("svg")
 
 from finrl_meta import config
 from finrl_meta.data_processors.processor_tusharepro import TushareProProcessor, ReturnPlotter
-from finrl_meta.env_stock_trading.env_stocktrading_A_sinawave2 import StockTradingEnv
+from finrl_meta.env_stock_trading.env_stocktrading_A_sinawave3 import StockTradingEnv
 from drl_agents.stablebaselines3_models import DRLAgent
 
 pd.options.display.max_columns = None
@@ -188,6 +188,7 @@ if __name__ == "__main__":
         "batch_size": 1024,                 #一个批次训练的样本数量
         "buffer_size": 100000,                    #每个看1000次，需要1亿次
         "learning_rate": 0.00075,
+        "gamma": 0.9999,
         "action_noise": "ornstein_uhlenbeck",
         "gradient_steps": 100,                     # 一共训练多少个批次,1 - beta1 ** step
         "policy_delay": 2,                        # critic训练多少次才训练actor一次
@@ -214,7 +215,7 @@ if __name__ == "__main__":
     model_ddpg_before_train = None
 
     if os.path.exists("moneyMaker_sina.model"):
-        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate':0.00075, "batch_size": 1024, "train_freq": (2500, "step"), "gradient_steps": 100}) #必须在此处修改lr
+        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate': 0.00075, "gamma": 0.9999, "batch_size": 1024, "train_freq": (2500, "step"), "gradient_steps": 100}) #必须在此处修改lr
         model_ddpg_before_train.set_env(env_train)
 
         #dict = model_ddpg_before_train.get_parameters()
