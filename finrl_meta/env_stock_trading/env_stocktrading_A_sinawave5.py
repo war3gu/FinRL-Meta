@@ -55,7 +55,8 @@ class StockTradingEnv(gym.Env):
         self.day = self.day_start                               #当前日期
         self.cash = self.initial_amount                         #现金
         self.holds = [0]*self.stock_dim                         #持仓
-        self.cost = 0
+        self.cost_holds = [0]*self.stock_dim                    #个股持仓的总费用，买入卖出会变
+        self.cost_friction = 0                                  #摩擦费用
         self.count_0 = 0                                        #为了提高采样的质量，记录无操作的次数
 
         self.actions_memory=[]
@@ -78,7 +79,8 @@ class StockTradingEnv(gym.Env):
         self.cash = self.initial_amount                         #现金.如果是train，应该根据域范围随机得到
 
         self.holds = [0]*self.stock_dim                         #持仓
-        self.cost = 0
+        self.cost_holds = [0]*self.stock_dim
+        self.cost_friction = 0                                  #摩擦费用
         self.count_0 = 0
 
         self.actions_memory=[]
@@ -158,9 +160,15 @@ class StockTradingEnv(gym.Env):
         buy_index = argsort_actions[::-1][:np.where(actions > 0)[0].shape[0]]   #得到买的索引
 
 
-
+        reward_sell_all = 0
         for index in sell_index:
-            actions[index] = self._sell_stock(index, actions[index]) * (-1)
+            actions[index], rsa = self._sell_stock(index, actions[index])
+            actions[index] *= -1
+            reward_sell_all += rsa
+            #print('rsa {0}'.format(rsa))
+
+        #if reward_sell_all:
+            #print('reward_sell_all {0}'.format(reward_sell_all))
 
         for index in buy_index:
             actions[index] = self._buy_stock(index, actions[index])
@@ -187,7 +195,15 @@ class StockTradingEnv(gym.Env):
             self.cash_memory.append(self.cash)
 
 
-        reward = end_total_asset - begin_total_asset
+        #reward = end_total_asset - begin_total_asset
+
+        if terminal == True:            #剩余的，按照最后一天价格全部卖掉
+            for index in range(self.stock_dim):
+                _, rsa = self._sell_stock(index, self.holds[index])
+                reward_sell_all += rsa
+            print("sell residual")
+
+        reward = reward_sell_all
 
         '''
         penalty2 = 0
@@ -222,10 +238,13 @@ class StockTradingEnv(gym.Env):
             data = data.reset_index(drop=True)
             close = data.close
             price = close[index]
+            reward_sell = 0                                      #卖股票赚的钱
             if price > 0:                                        #价格大于0
                 # Sell only if the price is > 0 (no missing data in this particular date)
                 # perform sell action based on the sign of the action
                 if self.holds[index] > 0:                   #股份大于0
+
+                    cost_avg = self.cost_holds[index]/self.holds[index]            #平均每股成本
                     # Sell only if current asset is > 0
                     sell_num_shares = min(abs(action), self.holds[index])          #不能卖空
 
@@ -235,18 +254,23 @@ class StockTradingEnv(gym.Env):
                     sell_amount = price * sell_num_shares * (1- self.sell_cost_pct)                #扣除费用，实际获得金额
                     self.cash += sell_amount                                                       #更新金额
                     self.holds[index] -= sell_num_shares                                           #更新股票
-                    self.cost += price * sell_num_shares * self.sell_cost_pct                      #更新交易摩擦费用
+
+
+
+                    self.cost_holds[index] = cost_avg * self.holds[index]                          #新的总成本
+                    self.cost_friction += price * sell_num_shares * self.sell_cost_pct             #更新交易摩擦费用
+                    reward_sell = sell_amount - cost_avg*sell_num_shares                           #获得金额减去成本=赚的
                     #self.trades+=1                                                                #更新交易数量
                 else:
                     sell_num_shares = 0
             else:
                 sell_num_shares = 0
 
-            return sell_num_shares
+            return sell_num_shares, reward_sell
 
-        sell_num_shares = _do_sell_normal()
+        sell_num_shares, reward_sell = _do_sell_normal()
 
-        return sell_num_shares
+        return sell_num_shares, reward_sell
 
     def _buy_stock(self, index, action):
 
@@ -268,7 +292,8 @@ class StockTradingEnv(gym.Env):
 
                 self.holds[index] += buy_num_shares                                        #更新股票数量
 
-                self.cost += price * buy_num_shares * self.buy_cost_pct                    #更新交易摩擦费用
+                self.cost_holds[index] += buy_amount                                       #买入花费
+                self.cost_friction += price * buy_num_shares * self.buy_cost_pct           #更新交易摩擦费用
                 #self.trades+=1                                                            #更新交易数量
             else:
                 buy_num_shares = 0
@@ -299,13 +324,16 @@ class StockTradingEnv(gym.Env):
         data = self.df.loc[self.day, :]
         close = np.array(data.close)/np.array(data0.close)
 
-        stock_can_buy = self._get_can_buy()/10000
+        #stock_can_buy = self._get_can_buy()/10000
+
+        cost_holds = np.array(self.cost_holds)/self.initial_amount
 
         state = np.hstack(
             (
                 days_left,
                 cash,
-                stock_can_buy,
+                #stock_can_buy,
+                cost_holds,
                 -holds,
                 close
             )

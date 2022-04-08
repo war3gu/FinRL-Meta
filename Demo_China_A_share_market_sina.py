@@ -187,7 +187,7 @@ if __name__ == "__main__":
     DDPG_PARAMS = {
         "batch_size": 128,                 #一个批次训练的样本数量
         "buffer_size": 100000,                    #每个看1000次，需要1亿次
-        "learning_rate": 0.0001,
+        "learning_rate": 0.00075,
         "gamma": 0.9999,
         "action_noise": "ornstein_uhlenbeck",
         "gradient_steps": 100,                     # 一共训练多少个批次,1 - beta1 ** step
@@ -196,8 +196,8 @@ if __name__ == "__main__":
         "learning_starts": 10
     }
 
-    POLICY_KWARGS = dict(net_arch=dict(pi=[64, 256, 256, 256, 64], qf=[64, 256, 256, 256, 64]),
-                         optimizer_kwargs=dict(weight_decay=0, amsgrad=False, betas=[0.9999, 0.9999]))
+    POLICY_KWARGS = dict(net_arch=dict(pi=[128, 512, 512, 512, 128], qf=[128, 512, 512, 512, 128]),
+                         optimizer_kwargs=dict(weight_decay=0, amsgrad=False, betas=[0.95, 0.99]))
 
     print("total_timesteps = {0}".format(total_timesteps))
 
