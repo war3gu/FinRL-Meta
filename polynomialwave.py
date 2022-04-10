@@ -6,14 +6,9 @@ import matplotlib.pyplot as plt
 import time
 from datetime import datetime, timedelta
 
+
+'''
 def sin_wave(A, f, fs, phi, t):
-    '''
-    :params A:    振幅
-    :params f:    信号频率       1秒多少个波峰
-    :params fs:   采样频率
-    :params phi:  相位
-    :params t:    时间长度
-    '''
     # 若时间序列长度为 t=1s,
     # 采样频率 fs=1000 Hz, 则采样时间间隔 Ts=1/fs=0.001s
     # 对于时间序列采样点个数为 n=t/Ts=1/0.001=1000, 即有1000个点,每个点间隔为 Ts
@@ -87,4 +82,61 @@ noise_devia2 = 10
 df2 = generate_sin_wave(fs2, last2, noise_devia2, 'sinawave_noise2')
 df2.to_csv('datasets/sinawave_noise2.csv')
 
+'''
 
+def generate_days(begin_date, count):
+    date_list = []
+    begin_date = datetime.strptime(begin_date, "%Y-%m-%d")
+    for i in range(count):
+        date_str = begin_date.strftime("%Y-%m-%d")
+        date_list.append(date_str)
+        begin_date += timedelta(days=1)
+    return np.array(date_list)
+
+def f(coefficient, variable):
+    p = 0
+    for i in range(0,len(coefficient)):
+        p = p + coefficient[i] * ((variable)**i)
+    return p
+
+function_coefficient1 = [0,-1,30, -30, -1, 1.5]
+
+function_coefficient2 = [0,-1,20, -20, -1, 0.7]
+
+data_length = 100
+data_shift = -50
+
+def generate_polynomial_wave(function_coefficient, data_length, data_shift, stock_name):
+    data_array = []
+    for i in range(data_length*2):
+        x = i*0.5 + data_shift
+        value = f(function_coefficient, x/10)
+        data_array.append(value)
+
+    print(data_array)
+    data_array = (np.array(data_array)+1000)/100
+    date = generate_days('2000-01-01', data_length*2)
+
+    name = [stock_name] * (data_length*2)
+
+    name = np.array(name)
+
+    df = pd.DataFrame([data_array, date, name])
+    df = pd.DataFrame(df.values.T, index=df.columns, columns=df.index)
+    df.columns = ['close', 'date', 'tic']
+
+    x = np.arange(0, data_length*2) + data_shift
+    plt.xlabel('x')
+    plt.ylabel('data1')
+    plt.grid()
+    plt.plot(x, data_array, 'k')
+    plt.legend(['data1'], loc=1)
+    plt.show()
+
+    return df
+
+df1 = generate_polynomial_wave(function_coefficient1, data_length, data_shift, 'polynomial_noise1.csv')
+df1.to_csv('datasets/polynomial_noise1.csv')
+
+df2 = generate_polynomial_wave(function_coefficient2, data_length, data_shift, 'polynomial_noise2.csv')
+df2.to_csv('datasets/polynomial_noise2.csv')

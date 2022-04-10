@@ -62,6 +62,7 @@ class StockTradingEnv(gym.Env):
         self.actions_memory=[]
         self.date_memory=[]
         self.asset_memory=[]
+        self.reward_memory=[]
 
 
     def reset(self):
@@ -69,11 +70,11 @@ class StockTradingEnv(gym.Env):
             lll = len(self.df.date.unique())
             length = int(lll*0.95)
             day_start = random.choice(range(length))
-            self.day_start = 0
+            self.day_start = 4
         else:
-            self.day_start = 0
+            self.day_start = 4
 
-        print("day_start {0}".format(self.day_start))
+        #print("day_start {0}".format(self.day_start))
         self.day = self.day_start
 
         self.cash = self.initial_amount                         #现金.如果是train，应该根据域范围随机得到
@@ -87,13 +88,14 @@ class StockTradingEnv(gym.Env):
         self.date_memory=[]
         self.asset_memory=[]
         self.cash_memory = []
+        self.reward_memory = []
 
         self.date_memory.append(self._get_date())
         self.asset_memory.append(self.cash)
         self.cash_memory.append(self.cash)
 
-        #if self.mode == 'train':
-            #self._initial_cash_and_buy_()
+        if self.mode == 'train':
+            self._initial_cash_and_buy_()
 
         state = self._update_state()
         return state
@@ -119,13 +121,16 @@ class StockTradingEnv(gym.Env):
 
         prices = data.close.values.tolist()
         avg_price = sum(prices)/len(prices)
-        ran = random.random()                 #随机买。因为开始日期是随机的，initial_amount也可以是随机的。需要新加域，表明当前的cash范围,然后在范围内随机一个值
+        #ran = random.random()                 #随机买。因为开始日期是随机的，initial_amount也可以是随机的。需要新加域，表明当前的cash范围,然后在范围内随机一个值
+        ran = 0.5
         buy_nums_each_tic = ran*self.cash//(avg_price*len(prices))  # only use half of the initial amount
         buy_nums_each_tic = buy_nums_each_tic//100*100
         cost = sum(prices)*buy_nums_each_tic
 
         self.cash = self.cash - cost
         self.holds = [buy_nums_each_tic]*self.stock_dim
+        #self.cost_holds = prices * buy_nums_each_tic
+        self.cost_holds = [price*buy_nums_each_tic for price in prices]
 
         '''
         state = [self.initial_amount-cost] + \
@@ -201,9 +206,21 @@ class StockTradingEnv(gym.Env):
             for index in range(self.stock_dim):
                 _, rsa = self._sell_stock(index, self.holds[index])
                 reward_sell_all += rsa
-            print("sell residual")
+
 
         reward = reward_sell_all
+
+        self.reward_memory.append(reward)
+
+        if terminal == True:
+            earn1 = self.cash/self.initial_amount - 1
+            print("sell residual earn1 = {0}".format(earn1))
+
+            earn2 = np.sum(self.reward_memory)
+            earn2 = earn2/self.initial_amount
+            print("sell residual earn2 = {0}".format(earn2))
+
+            print('mode {0}'.format(self.mode))
 
         '''
         penalty2 = 0
@@ -314,15 +331,17 @@ class StockTradingEnv(gym.Env):
 
     def _update_state(self):
 
-        days_left = self._get_days_left()
+        #days_left = self._get_days_left()
 
         cash = self.cash/self.initial_amount
 
         holds = np.array(self.holds)/10000
 
         data0 = self.df.loc[0, :]
-        data = self.df.loc[self.day, :]
-        close = np.array(data.close)/np.array(data0.close)
+        data = self.df.loc[self.day-4:self.day, :]
+        #m1 = data.close.unique()
+        #m2 = data0.close.unique()
+        close = np.array(data.close)/np.array(data0.close).sum()
 
         #stock_can_buy = self._get_can_buy()/10000
 
@@ -330,7 +349,7 @@ class StockTradingEnv(gym.Env):
 
         state = np.hstack(
             (
-                days_left,
+                #days_left,
                 cash,
                 #stock_can_buy,
                 cost_holds,

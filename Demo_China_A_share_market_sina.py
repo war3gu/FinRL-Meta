@@ -151,20 +151,20 @@ if __name__ == "__main__":
     token = '27080ec403c0218f96f388bca1b1d85329d563c91a43672239619ef5'
     ts_processor = TushareProProcessor("tusharepro", token=token)
 
-    sina1 = pd.read_csv('datasets/sinawave_noise1.csv')
-    sina2 = pd.read_csv('datasets/sinawave_noise2.csv')
+    sina1 = pd.read_csv('datasets/polynomial_noise1.csv')
+    sina2 = pd.read_csv('datasets/polynomial_noise2.csv')
     sina = sina1.append(sina2)
     sina = sina.sort_values(['date', "tic"], ignore_index=True)
 
-    train = ts_processor.data_split(sina, '2000-01-01', '2000-02-20')        #短一些，方便训练
-    trade = ts_processor.data_split(sina, '2000-03-09', '2000-04-09')
+    train = ts_processor.data_split(sina, '2000-01-01', '2000-05-30')        #短一些，方便训练
+    trade = ts_processor.data_split(sina, '2000-05-30', '2000-07-18')
 
     train = expandTrain(train)
 
     #draw_results(trade, None, None)
 
     stock_dimension = len(train.tic.unique())
-    state_space = 1 + 1 + stock_dimension*2 + stock_dimension   #剩余天数， 现金,持仓*2，股价
+    state_space =  1 + stock_dimension*6 + stock_dimension   #剩余天数， 现金,持仓*2，股价
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
 
     total_timesteps = 50000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
@@ -188,15 +188,15 @@ if __name__ == "__main__":
         "batch_size": 128,                 #一个批次训练的样本数量
         "buffer_size": 100000,                    #每个看1000次，需要1亿次
         "learning_rate": 0.00075,
-        "gamma": 0.9999,
+        "gamma": 0.99,
         "action_noise": "ornstein_uhlenbeck",
         "gradient_steps": 100,                     # 一共训练多少个批次,1 - beta1 ** step
-        "policy_delay": 2,                        # critic训练多少次才训练actor一次
+        "policy_delay": 1,                        # critic训练多少次才训练actor一次
         "train_freq": (500, "step"),             # 采样多少次训练一次
         "learning_starts": 10
     }
 
-    POLICY_KWARGS = dict(net_arch=dict(pi=[128, 512, 512, 512, 128], qf=[128, 512, 512, 512, 128]),
+    POLICY_KWARGS = dict(net_arch=dict(pi=[256, 1024, 1024, 1024, 256], qf=[256, 1024, 1024, 1024, 256]),
                          optimizer_kwargs=dict(weight_decay=0, amsgrad=False, betas=[0.95, 0.99]))
 
     print("total_timesteps = {0}".format(total_timesteps))
@@ -204,6 +204,7 @@ if __name__ == "__main__":
     e_train_gym = StockTradingEnv(df=train, **env_kwargs_train)
 
     n_cores = multiprocessing.cpu_count()
+    #n_cores = 1
     print("core count = {0}".format(n_cores))
 
     env_train, _ = e_train_gym.get_multiproc_env(n=n_cores)
@@ -215,7 +216,7 @@ if __name__ == "__main__":
     model_ddpg_before_train = None
 
     if os.path.exists("moneyMaker_sina.model"):
-        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate': 0.00075, "gamma": 0.9999, "batch_size": 128, "train_freq": (500, "step"), "gradient_steps": 100}) #必须在此处修改lr
+        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate': 0.00075, "gamma": 0.99, "batch_size": 128, "train_freq": (500, "step"), "gradient_steps": 100}) #必须在此处修改lr
         model_ddpg_before_train.set_env(env_train)
 
         #dict = model_ddpg_before_train.get_parameters()
