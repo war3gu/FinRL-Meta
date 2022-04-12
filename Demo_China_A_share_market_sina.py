@@ -172,7 +172,7 @@ if __name__ == "__main__":
 
     env_kwargs_train = {
         "stock_dim": stock_dimension,
-        "hmax": 10000,
+        "hmax": 1000,
         "initial_amount": 1000000,                            #多准备点金钱，让ai能够频繁买卖.训练过程中可以慢慢降低这个值
         "buy_cost_pct": 6.87e-5,
         "sell_cost_pct": 1.0687e-3,
@@ -180,7 +180,7 @@ if __name__ == "__main__":
         "state_space": state_space,
         "action_space": stock_dimension,
         "out_of_cash_penalty": 0.001,
-        "cash_limit": 0.2,
+        "cash_limit": 0.1,
         "mode":"train",                                      #根据这个来决定是训练还是交易
     }
 
@@ -189,14 +189,16 @@ if __name__ == "__main__":
         "buffer_size": 100000,                    #每个看1000次，需要1亿次
         "learning_rate": 0.00075,
         "gamma": 0.99,
+        "tau": 0.005,
+        "target_policy_noise": 0.0000001,
         "action_noise": "ornstein_uhlenbeck",
         "gradient_steps": 100,                     # 一共训练多少个批次,1 - beta1 ** step
-        "policy_delay": 1,                        # critic训练多少次才训练actor一次
+        "policy_delay": 2,                        # critic训练多少次才训练actor一次
         "train_freq": (500, "step"),             # 采样多少次训练一次
         "learning_starts": 10
     }
 
-    POLICY_KWARGS = dict(net_arch=dict(pi=[256, 1024, 1024, 1024, 256], qf=[256, 1024, 1024, 1024, 256]),
+    POLICY_KWARGS = dict(net_arch=dict(pi=[128, 512, 512, 512, 128], qf=[128, 512, 512, 512, 128]),
                          optimizer_kwargs=dict(weight_decay=0, amsgrad=False, betas=[0.95, 0.99]))
 
     print("total_timesteps = {0}".format(total_timesteps))
@@ -243,7 +245,7 @@ if __name__ == "__main__":
 
         env_kwargs_test = {
             "stock_dim": stock_dimension,
-            "hmax": 10000,
+            "hmax": 1000,
             "initial_amount": 1000000,
             "buy_cost_pct": 6.87e-5,
             "sell_cost_pct": 1.0687e-3,

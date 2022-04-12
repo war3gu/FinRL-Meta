@@ -94,8 +94,9 @@ class StockTradingEnv(gym.Env):
         self.asset_memory.append(self.cash)
         self.cash_memory.append(self.cash)
 
-        if self.mode == 'train':
-            self._initial_cash_and_buy_()
+
+        #if self.mode == 'train':
+            #self._initial_cash_and_buy_()
 
         state = self._update_state()
         return state
@@ -214,13 +215,13 @@ class StockTradingEnv(gym.Env):
 
         if terminal == True:
             earn1 = self.cash/self.initial_amount - 1
-            print("sell residual earn1 = {0}".format(earn1))
+            print("sell residual earn1 = {0} \n".format(earn1))
 
             earn2 = np.sum(self.reward_memory)
             earn2 = earn2/self.initial_amount
-            print("sell residual earn2 = {0}".format(earn2))
+            print("sell residual earn2 = {0} \n".format(earn2))
 
-            print('mode {0}'.format(self.mode))
+            print('mode {0} \n'.format(self.mode))
 
         '''
         penalty2 = 0
@@ -243,6 +244,16 @@ class StockTradingEnv(gym.Env):
         '''
 
         reward = reward * self.reward_scaling
+
+        #if reward < 0:
+            #reward *= 10
+
+
+        #if self.cash < end_total_asset*self.cash_limit:
+            #reward -= self.initial_amount*0.0001*self.reward_scaling    #无差别减去等于没减
+        #elif self.cash > end_total_asset*(1-self.cash_limit):
+            #reward -= self.initial_amount*0.0001*self.reward_scaling
+
 
         return state, reward, terminal, {}
 
