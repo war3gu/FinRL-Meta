@@ -68,7 +68,7 @@ class StockTradingEnv(gym.Env):
     def reset(self):
         if self.mode == 'train':
             lll = len(self.df.date.unique())
-            length = int(lll*0.95)
+            length = int(lll*0.90)
             day_start = random.choice(range(length))
             self.day_start = 4
         else:
@@ -219,9 +219,9 @@ class StockTradingEnv(gym.Env):
 
             earn2 = np.sum(self.reward_memory)
             earn2 = earn2/self.initial_amount
-            print("sell residual earn2 = {0} \n".format(earn2))
+            #print("sell residual earn2 = {0} \n".format(earn2))
 
-            print('mode {0} \n'.format(self.mode))
+            #print('mode {0} \n'.format(self.mode))
 
         '''
         penalty2 = 0

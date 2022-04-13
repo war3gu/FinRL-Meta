@@ -13,7 +13,7 @@ from stable_baselines3.common.noise import (
     OrnsteinUhlenbeckActionNoise,
 )
 from stable_baselines3.common.vec_env import DummyVecEnv
-
+from drl_agents.noiseSuper import *
 # RL models from stable-baselines
 
 
@@ -23,7 +23,9 @@ MODEL_KWARGS = {x: config.__dict__[f"{x.upper()}_PARAMS"] for x in MODELS.keys()
 
 NOISE = {
     "normal": NormalActionNoise,
+    "normal_super": NormalActionNoiseSuper,
     "ornstein_uhlenbeck": OrnsteinUhlenbeckActionNoise,
+    "ornstein_uhlenbeck_super":OrnsteinUhlenbeckActionNoiseSuper,
 }
 
 
@@ -34,6 +36,11 @@ class TensorboardCallback(BaseCallback):
 
     def __init__(self, verbose=0):
         super(TensorboardCallback, self).__init__(verbose)
+
+    def _on_training_start(self) -> None:
+        print('_on_training_start in TensorboardCallback')
+        #learn once，change noise once
+        self.model.action_noise.sigmaMultiply(0.85)
 
     def _on_step(self) -> bool:
         try:
@@ -83,7 +90,7 @@ class DRLAgent:
         if "action_noise" in model_kwargs:
             n_actions = self.env.action_space.shape[-1]
             model_kwargs["action_noise"] = NOISE[model_kwargs["action_noise"]](
-                mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions)
+                mean=np.zeros(n_actions), sigma=1.5 * np.ones(n_actions)
             )
         print(model_kwargs)
         model = MODELS[model_name](
