@@ -151,14 +151,14 @@ class StockTradingEnv(gym.Env):
         if self.mode == 'test':
             actions_old = actions.copy()
 
-        begin_total_asset = self._update_total_assets()
+        #begin_total_asset = self._update_total_assets()
 
         stocks_can_buy = self._get_can_buy()
-        stocks_can_sell = -np.array(self.holds)
+        #stocks_can_sell = -np.array(self.holds)
 
-        base_ = np.array([-1]*self.stock_dim)
+        #base_ = np.array([-1]*self.stock_dim)
 
-        actions = (actions - base_)/2*(stocks_can_buy - stocks_can_sell)+stocks_can_sell
+        #actions = (actions - base_)/2*(stocks_can_buy - stocks_can_sell)+stocks_can_sell
 
         argsort_actions = np.argsort(actions)  #索引排序
 
@@ -215,7 +215,7 @@ class StockTradingEnv(gym.Env):
 
         if terminal == True:
             earn1 = self.cash/self.initial_amount - 1
-            print("sell residual earn1 = {0} \n".format(earn1))
+            #print("sell residual earn1 = {0} \n".format(earn1))
 
             earn2 = np.sum(self.reward_memory)
             earn2 = earn2/self.initial_amount
@@ -254,8 +254,18 @@ class StockTradingEnv(gym.Env):
         #elif self.cash > end_total_asset*(1-self.cash_limit):
             #reward -= self.initial_amount*0.0001*self.reward_scaling
 
+        #self.action_space.bounded_below =
+        self.action_space.low = -np.array(self.holds)
 
-        return state, reward, terminal, {}
+        stocks_can_buy = self._get_can_buy()
+
+        #self.action_space.bounded_above =
+        self.action_space.high = np.array(stocks_can_buy)
+
+        action_space = self.action_space
+
+
+        return state, reward, terminal, {"action_space":action_space}
 
 
 

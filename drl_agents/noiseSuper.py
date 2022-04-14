@@ -11,7 +11,7 @@ class OrnsteinUhlenbeckActionNoiseSuper(OrnsteinUhlenbeckActionNoise):
     def reset(self) -> None:
         super(OrnsteinUhlenbeckActionNoise, self).reset()
         self._sigma *= 0.99   #gyk
-        print('_sigma ={0}'.format(self._sigma))
+        #print('_sigma ={0}'.format(self._sigma))
 
     def sigmaMultiply(self, ratio) -> None:
         self._sigma *= ratio

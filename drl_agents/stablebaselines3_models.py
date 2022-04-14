@@ -14,6 +14,7 @@ from stable_baselines3.common.noise import (
 )
 from stable_baselines3.common.vec_env import DummyVecEnv
 from drl_agents.noiseSuper import *
+from gym import spaces
 # RL models from stable-baselines
 
 
@@ -40,13 +41,42 @@ class TensorboardCallback(BaseCallback):
     def _on_training_start(self) -> None:
         print('_on_training_start in TensorboardCallback')
         #learn once，change noise once
-        self.model.action_noise.sigmaMultiply(0.85)
+        self.model.action_noise.sigmaMultiply(0.95)
 
     def _on_step(self) -> bool:
-        try:
-            self.logger.record(key="train/reward", value=self.locals["rewards"][0])
-        except BaseException:
-            self.logger.record(key="train/reward", value=self.locals["reward"][0])
+        #try:
+            #根据infos中的信息，修改noise的mu，保证多数操作是有效的
+            #修改self.model.policy.action_space。noise可以继续修改
+        action_spaces = self.locals['infos']
+            #多个取平均，这个以后会趋同
+        lll = len(action_spaces)
+        shape = 2 ####action_spaces[0]['action_space'].shape[0]
+        low = np.array([0]*shape)
+        high = np.array([0]*shape)
+        for index, everyOne in enumerate(action_spaces):
+            action_space = everyOne['action_space']
+            low = low + action_space.low
+            high= high + action_space.high
+        low =  low//lll
+        high=  high//lll
+        #print('low0 {0}'.format(low))
+        #print('high0 {0}'.format(high))
+        #if np.count_nonzero(low) < shape:
+            #low = np.array([-100]*shape)
+        #if np.count_nonzero(high) < shape:
+            #high = np.array([100]*shape)
+        if low[0] >= high[0]:
+            high[0] = low[0] + 100
+        if low[1] >= high[1]:
+            high[1] = low[1] + 100
+
+        #print('low {0}'.format(low))
+        #print('high {0}'.format(high))
+        bbb = spaces.Box(low = low, high = high,shape = (2,))
+        self.model.policy.action_space = bbb
+        self.logger.record(key="train/reward", value=self.locals["rewards"][0])
+        #except BaseException:
+            #self.logger.record(key="train/reward", value=self.locals["reward"][0])
         return True
 
 
@@ -90,7 +120,7 @@ class DRLAgent:
         if "action_noise" in model_kwargs:
             n_actions = self.env.action_space.shape[-1]
             model_kwargs["action_noise"] = NOISE[model_kwargs["action_noise"]](
-                mean=np.zeros(n_actions), sigma=1.5 * np.ones(n_actions)
+                mean=np.zeros(n_actions), sigma= 1 * np.ones(n_actions)
             )
         print(model_kwargs)
         model = MODELS[model_name](
