@@ -1,3 +1,4 @@
+import math
 
 import numpy as np
 import pandas as pd
@@ -47,7 +48,7 @@ class StockTradingEnv(gym.Env):
         self.cash_limit = cash_limit                            #资金极限占比
 
 ###################################################################################
-        self.action_space = spaces.Box(low = -1, high = 1,shape = (self.action_space,))
+        self.action_space = spaces.Box(low = 0, high = 1,shape = (self.action_space,))
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape = (self.state_space,))
 ####################################################################################
 
@@ -143,22 +144,64 @@ class StockTradingEnv(gym.Env):
     def step(self, actions):
         #print('step')
 
+        self.cost_friction = 0
+
 
         #actions = actions * self.hmax #actions initially is scaled between 0 to 1
         #actions = (actions.astype(int)) #convert into integer because we can't by fraction of shares
 
-        actions_old = None
-        if self.mode == 'test':
-            actions_old = actions.copy()
+        data = self.df.loc[self.day, :]
+        data = data.reset_index(drop=True)
+        close = data.close
 
+        actions_old = actions.copy()
+
+        buy_ratio = actions[0:3]
+        sell_ratio = actions[3:5]
+
+        double = 5
+        mmm = math.exp(double*buy_ratio[0])/(math.exp(double*buy_ratio[0])+math.exp(double*buy_ratio[1])+math.exp(double*buy_ratio[2]))
+        buy0_money = mmm*self.cash
+        nnn = math.exp(double*buy_ratio[1])/(math.exp(double*buy_ratio[0])+math.exp(double*buy_ratio[1])+math.exp(double*buy_ratio[2]))
+        buy1_money = nnn*self.cash
+
+        buy0_stock = buy0_money/close[0]
+        buy1_stock = buy1_money/close[1]
+
+        sell0_stock = self.holds[0]*sell_ratio[0]
+        sell1_stock = self.holds[1]*sell_ratio[1]
+
+        reward_sell_all = 0
+
+        order = self._get_Order()
+
+        if order == 0:                      #先买后卖
+            #print('haha')
+            self._buy_stock(0, buy0_stock)
+            self._buy_stock(1, buy1_stock)
+
+            _, rsa0 = self._sell_stock(0, sell0_stock)
+            reward_sell_all += rsa0
+            _, rsa1 = self._sell_stock(1, sell1_stock)
+            reward_sell_all += rsa1
+        else:                               #先卖后买
+            #print('xixi')
+            _, rsa0 = self._sell_stock(0, sell0_stock)
+            reward_sell_all += rsa0
+            _, rsa1 = self._sell_stock(1, sell1_stock)
+            reward_sell_all += rsa1
+
+            self._buy_stock(0, buy0_stock)
+            self._buy_stock(1, buy1_stock)
+
+
+
+        '''
         begin_total_asset = self._update_total_assets()
 
         stocks_can_buy = self._get_can_buy()
         stocks_can_sell = -np.array(self.holds)
 
-        base_ = np.array([-1]*self.stock_dim)
-
-        actions = (actions - base_)/2*(stocks_can_buy - stocks_can_sell)+stocks_can_sell
 
         argsort_actions = np.argsort(actions)  #索引排序
 
@@ -175,10 +218,8 @@ class StockTradingEnv(gym.Env):
             actions[index], rsa = self._sell_stock(index, actions[index])
             actions[index] *= -1
             reward_sell_all += rsa
-            #print('rsa {0}'.format(rsa))
 
-        #if reward_sell_all:
-            #print('reward_sell_all {0}'.format(reward_sell_all))
+
 
         for index in buy_index:
             actions[index] = self._buy_stock(index, actions[index])
@@ -186,15 +227,11 @@ class StockTradingEnv(gym.Env):
                 action_illeagl += 1
                 self.action_illeagl_all += 1
                 continue
-        #self.actions_memory.append(actions)                         #此处的action是被处理过的。如果action始终为0也要被惩罚,这属于reword塑形
+        '''
 
         self.day += 1
 
         terminal = self.day >= len(self.df.index.unique())-1
-
-        #if terminal == True:  #统计非0的操作数量
-            #count_non0 = np.count_nonzero(self.actions_memory)
-            #print('no zero count {0} mode {1}'.format(count_non0, self.mode))
 
 
         state = self._update_state()                               #新的一天，close和技术指标都变了
@@ -209,15 +246,13 @@ class StockTradingEnv(gym.Env):
             self.cash_memory.append(self.cash)
 
 
-        #reward = end_total_asset - begin_total_asset
-
         if terminal == True:            #剩余的，按照最后一天价格全部卖掉
             for index in range(self.stock_dim):
                 _, rsa = self._sell_stock(index, self.holds[index])
                 reward_sell_all += rsa
 
 
-        reward = reward_sell_all
+        reward = reward_sell_all - self.cost_friction        #需要减去摩擦费用，防止频繁交易
 
         self.reward_memory.append(reward)
 
@@ -230,7 +265,7 @@ class StockTradingEnv(gym.Env):
             #print("sell residual earn2 = {0} \n".format(earn2))
 
             #print('mode {0} \n'.format(self.mode))
-            print('mode {0} action_illeagl_all {1}\n'.format(self.mode, self.action_illeagl_all))
+            #print('mode {0} action_illeagl_all {1}\n'.format(self.mode, self.action_illeagl_all))
 
         '''
         penalty2 = 0
@@ -358,6 +393,12 @@ class StockTradingEnv(gym.Env):
 
         return buy_num_shares
 
+    def _get_Order(self):
+        total_assets = self._update_total_assets()
+        if self.cash > total_assets*0.5:
+            return 0
+        else:
+            return 1
 
     def _update_total_assets(self):
         data = self.df.loc[self.day, :]
@@ -384,6 +425,8 @@ class StockTradingEnv(gym.Env):
 
         cost_holds = np.array(self.cost_holds)/self.initial_amount
 
+        order = self._get_Order()
+
         state = np.hstack(
             (
                 #days_left,
@@ -391,7 +434,8 @@ class StockTradingEnv(gym.Env):
                 #stock_can_buy,
                 cost_holds,
                 -holds,
-                close
+                close,
+                order
             )
         )
         return state

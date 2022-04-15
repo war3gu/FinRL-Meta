@@ -57,7 +57,7 @@ class StockTradingEnv(gym.Env):
         self.holds = [0]*self.stock_dim                         #持仓
         self.cost_holds = [0]*self.stock_dim                    #个股持仓的总费用，买入卖出会变
         self.cost_friction = 0                                  #摩擦费用
-        self.action_illeagl_all = 0                             #记录非法操作的次数
+        self.action_illeagl_all =0                                #为了提高采样的质量，记录无操作的次数
 
         self.actions_memory=[]
         self.date_memory=[]
@@ -68,7 +68,7 @@ class StockTradingEnv(gym.Env):
     def reset(self):
         if self.mode == 'train':
             lll = len(self.df.date.unique())
-            length = int(lll*0.95)
+            length = int(lll*0.90)
             day_start = random.choice(range(length))
             self.day_start = 4
         else:
@@ -82,7 +82,7 @@ class StockTradingEnv(gym.Env):
         self.holds = [0]*self.stock_dim                         #持仓
         self.cost_holds = [0]*self.stock_dim
         self.cost_friction = 0                                  #摩擦费用
-        self.action_illeagl_all = 0
+        self.action_illeagl_all = 0                             #为了提高采样的质量，记录无操作的次数
 
         self.actions_memory=[]
         self.date_memory=[]
@@ -93,6 +93,7 @@ class StockTradingEnv(gym.Env):
         self.date_memory.append(self._get_date())
         self.asset_memory.append(self.cash)
         self.cash_memory.append(self.cash)
+
 
         if self.mode == 'train':
             self._initial_cash_and_buy_()
@@ -124,7 +125,7 @@ class StockTradingEnv(gym.Env):
         #ran = random.random()                 #随机买。因为开始日期是随机的，initial_amount也可以是随机的。需要新加域，表明当前的cash范围,然后在范围内随机一个值
         ran = 0.5
         buy_nums_each_tic = ran*self.cash//(avg_price*len(prices))  # only use half of the initial amount
-        buy_nums_each_tic = buy_nums_each_tic//100*100
+        buy_nums_each_tic = buy_nums_each_tic#//100*100
         cost = sum(prices)*buy_nums_each_tic
 
         self.cash = self.cash - cost
@@ -140,16 +141,13 @@ class StockTradingEnv(gym.Env):
         '''
 
     def step(self, actions):
-
         #print('step')
 
 
         #actions = actions * self.hmax #actions initially is scaled between 0 to 1
         #actions = (actions.astype(int)) #convert into integer because we can't by fraction of shares
 
-        actions_old = None
-        if self.mode == 'test':
-            actions_old = actions.copy()
+        actions_old = actions.copy()
 
         actions = actions * self.hmax #actions initially is scaled between 0 to 1
         actions = (actions.astype(int)) #convert into integer because we can't by fraction of shares
@@ -161,9 +159,7 @@ class StockTradingEnv(gym.Env):
         sell_index = argsort_actions[:np.where(actions < 0)[0].shape[0]]        #得到卖的索引
         buy_index = argsort_actions[::-1][:np.where(actions > 0)[0].shape[0]]   #得到买的索引
 
-
         action_illeagl = 0                     #非法操作
-
         reward_sell_all = 0
         for index in sell_index:
             if self.holds[index] == 0:                    #卖不存在的
@@ -173,7 +169,6 @@ class StockTradingEnv(gym.Env):
             actions[index], rsa = self._sell_stock(index, actions[index])
             actions[index] *= -1
             reward_sell_all += rsa
-
             #print('rsa {0}'.format(rsa))
 
         #if reward_sell_all:
@@ -194,6 +189,12 @@ class StockTradingEnv(gym.Env):
         #if terminal == True:  #统计非0的操作数量
         #count_non0 = np.count_nonzero(self.actions_memory)
         #print('no zero count {0} mode {1}'.format(count_non0, self.mode))
+
+
+        #现在需要action变了，下一个state跟着变，加penalty无法解决这个问题
+
+        #if self.mode == 'train':
+            #self.cash -= np.sum(actions_old)*100
 
 
         state = self._update_state()                               #新的一天，close和技术指标都变了
@@ -226,8 +227,9 @@ class StockTradingEnv(gym.Env):
 
             earn2 = np.sum(self.reward_memory)
             earn2 = earn2/self.initial_amount
-            print("sell residual earn2 = {0} \n".format(earn2))
+            #print("sell residual earn2 = {0} \n".format(earn2))
 
+            #print('mode {0} \n'.format(self.mode))
             print('mode {0} action_illeagl_all {1}\n'.format(self.mode, self.action_illeagl_all))
 
         '''
@@ -252,14 +254,40 @@ class StockTradingEnv(gym.Env):
 
         reward = reward * self.reward_scaling
 
-        '''
+
+
         if self.mode == 'train':
-            penalty = self.initial_amount*0.01*action_illeagl
-            #cash是不是也要相应的处理
-            if self.cash > penalty:
-                self.cash -= penalty
-                reward -= penalty * self.reward_scaling
-        '''
+            penalty = self.initial_amount*self.out_of_cash_penalty*action_illeagl                   #重重的惩罚
+            reward -= penalty * self.reward_scaling             #不用减少cash，保证train，test统一状态切换，state里没有reward
+
+
+
+
+
+        #cash是不是也要相应的处理
+        #if self.cash > penalty:
+        #self.cash -= penalty
+        #reward -= penalty * self.reward_scaling
+
+
+        #if reward < 0:
+        #reward *= 10
+
+
+        #if self.cash < end_total_asset*self.cash_limit:
+        #reward -= self.initial_amount*0.0001*self.reward_scaling    #无差别减去等于没减
+        #elif self.cash > end_total_asset*(1-self.cash_limit):
+        #reward -= self.initial_amount*0.0001*self.reward_scaling
+
+
+        #self.action_space.low = -np.array(self.holds)
+
+        #stocks_can_buy = self._get_can_buy()
+
+        #self.action_space.high = np.array(stocks_can_buy)
+
+        #action_space = self.action_space
+
 
         return state, reward, terminal, {}
 
@@ -282,7 +310,7 @@ class StockTradingEnv(gym.Env):
                     # Sell only if current asset is > 0
                     sell_num_shares = min(abs(action), self.holds[index])          #不能卖空
 
-                    sell_num_shares = sell_num_shares//100*100                                 #100倍数
+                    sell_num_shares = sell_num_shares#//100*100                                 #100倍数
 
 
                     sell_amount = price * sell_num_shares * (1- self.sell_cost_pct)                #扣除费用，实际获得金额
@@ -319,7 +347,7 @@ class StockTradingEnv(gym.Env):
 
                 # update balance
                 buy_num_shares = min(available_amount, action)                               #实际能买的数量
-                buy_num_shares = buy_num_shares//100*100
+                buy_num_shares = buy_num_shares#//100*100
 
                 buy_amount = price * buy_num_shares * (1 + self.buy_cost_pct)              #实际花费的金额
                 self.cash -= buy_amount                                                    #更新金额
@@ -387,7 +415,7 @@ class StockTradingEnv(gym.Env):
         data = self.df.loc[self.day, :]
         close = np.array(data.close)
         stock_can_buy = cash_avrage/close
-        stock_can_buy = stock_can_buy//100*100
+        stock_can_buy = stock_can_buy#//100*100
         #print('_get_call_buy')
         return stock_can_buy
 

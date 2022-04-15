@@ -17,7 +17,7 @@ display.set_matplotlib_formats("svg")
 
 from finrl_meta import config
 from finrl_meta.data_processors.processor_tusharepro import TushareProProcessor, ReturnPlotter
-from finrl_meta.env_stock_trading.env_stocktrading_A_sinawave5 import StockTradingEnv
+from finrl_meta.env_stock_trading.env_stocktrading_A_sinawave6 import StockTradingEnv
 from drl_agents.stablebaselines3_models import DRLAgent
 
 pd.options.display.max_columns = None
@@ -164,21 +164,21 @@ if __name__ == "__main__":
     #draw_results(trade, None, None)
 
     stock_dimension = len(train.tic.unique())
-    state_space =  1 + stock_dimension*6 + stock_dimension   #剩余天数， 现金,持仓*2，股价
+    state_space = 1 + 1 + stock_dimension*6 + stock_dimension   #剩余天数， 现金,持仓*2，股价
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
 
-    total_timesteps = 50000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
+    total_timesteps = 20000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
     #total_timesteps = 2000
 
     env_kwargs_train = {
         "stock_dim": stock_dimension,
         "hmax": 1000,
-        "initial_amount": 1000000,                            #多准备点金钱，让ai能够频繁买卖.训练过程中可以慢慢降低这个值
+        "initial_amount": 100000,                            #多准备点金钱，让ai能够频繁买卖.训练过程中可以慢慢降低这个值
         "buy_cost_pct": 6.87e-5,
         "sell_cost_pct": 1.0687e-3,
         "reward_scaling": 1e-2,
         "state_space": state_space,
-        "action_space": stock_dimension,
+        "action_space": 5,                                   #6是5个action
         "out_of_cash_penalty": 0.001,
         "cash_limit": 0.1,
         "mode":"train",                                      #根据这个来决定是训练还是交易
@@ -186,12 +186,12 @@ if __name__ == "__main__":
 
     DDPG_PARAMS = {
         "batch_size": 128,                 #一个批次训练的样本数量
-        "buffer_size": 100000,                    #每个看1000次，需要1亿次
+        "buffer_size": 10000,                    #每个看1000次，需要1亿次
         "learning_rate": 0.00075,
         "gamma": 0.99,
         "tau": 0.005,
         "target_policy_noise": 0.01,
-        "action_noise": "ornstein_uhlenbeck_super",
+        "action_noise": "ornstein_uhlenbeck",
         "gradient_steps": 100,                     # 一共训练多少个批次,1 - beta1 ** step
         "policy_delay": 2,                        # critic训练多少次才训练actor一次
         "train_freq": (500, "step"),             # 采样多少次训练一次
@@ -246,7 +246,7 @@ if __name__ == "__main__":
         env_kwargs_test = {
             "stock_dim": stock_dimension,
             "hmax": 1000,
-            "initial_amount": 1000000,
+            "initial_amount": 100000,
             "buy_cost_pct": 6.87e-5,
             "sell_cost_pct": 1.0687e-3,
             "reward_scaling": 1e-2,
