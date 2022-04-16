@@ -256,9 +256,10 @@ class StockTradingEnv(gym.Env):
 
         self.reward_memory.append(reward)
 
+        earn1 = None
         if terminal == True:
             earn1 = self.cash/self.initial_amount - 1
-            print("sell residual earn1 = {0} \n".format(earn1))
+            #print("sell residual earn1 = {0} \n".format(earn1))
 
             earn2 = np.sum(self.reward_memory)
             earn2 = earn2/self.initial_amount
@@ -316,7 +317,7 @@ class StockTradingEnv(gym.Env):
         #action_space = self.action_space
 
 
-        return state, reward, terminal, {}
+        return state, reward, terminal, {'earn1':earn1}
 
 
 

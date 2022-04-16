@@ -45,6 +45,12 @@ class TensorboardCallback(BaseCallback):
 
     def _on_step(self) -> bool:
         try:
+            infos = self.locals['infos']
+            for index, everyOne in enumerate(infos):
+                earn1 = everyOne['earn1']
+                if earn1 != None:
+                    print('earn1 = {0}'.format(earn1))
+
             self.logger.record(key="train/reward", value=self.locals["rewards"][0])
         except BaseException:
             self.logger.record(key="train/reward", value=self.locals["reward"][0])
