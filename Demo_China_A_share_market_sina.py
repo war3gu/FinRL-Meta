@@ -185,8 +185,8 @@ if __name__ == "__main__":
     }
 
     DDPG_PARAMS = {
-        "batch_size": 128,                 #一个批次训练的样本数量
-        "buffer_size": 10000,                    #每个看1000次，需要1亿次
+        "batch_size": 128*8,                 #一个批次训练的样本数量
+        "buffer_size": 200000,                    #每个看1000次，需要1亿次
         "learning_rate": 0.00075,
         "gamma": 0.99,
         "tau": 0.005,
@@ -195,18 +195,24 @@ if __name__ == "__main__":
         "gradient_steps": 100,                     # 一共训练多少个批次,1 - beta1 ** step
         "policy_delay": 2,                        # critic训练多少次才训练actor一次
         "train_freq": (500, "step"),             # 采样多少次训练一次
-        "learning_starts": 10
+        "learning_starts": 150000
     }
 
-    POLICY_KWARGS = dict(net_arch=dict(pi=[128*8, 512*8, 512*8, 512*8, 128*8], qf=[128*8, 512*8, 512*8, 512*8, 128*8]),
-                         optimizer_kwargs=dict(weight_decay=0, amsgrad=False, betas=[0.95, 0.99]))
+    actor_ratio = 8
+    critic_ratio = 8
+
+    POLICY_KWARGS = dict(net_arch=dict(pi=[128*actor_ratio, 512*actor_ratio, 128*actor_ratio], qf=[128*actor_ratio,  512*actor_ratio, 128*actor_ratio]),
+                     optimizer_kwargs=dict(weight_decay=0, amsgrad=False, betas=[0.95, 0.99]))
+
+    #POLICY_KWARGS = dict(net_arch=dict(pi=[128*actor_ratio, 512*actor_ratio, 512*actor_ratio, 512*actor_ratio, 128*actor_ratio], qf=[128*critic_ratio, 512*critic_ratio, 512*critic_ratio, 512*critic_ratio, 128*critic_ratio]),
+                         #optimizer_kwargs=dict(weight_decay=0, amsgrad=False, betas=[0.95, 0.99]))
 
     print("total_timesteps = {0}".format(total_timesteps))
 
     e_train_gym = StockTradingEnv(df=train, **env_kwargs_train)
 
     n_cores = multiprocessing.cpu_count()
-    #n_cores = 1
+    n_cores = 4
     print("core count = {0}".format(n_cores))
 
     env_train, _ = e_train_gym.get_multiproc_env(n=n_cores)

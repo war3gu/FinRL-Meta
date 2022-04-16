@@ -51,6 +51,8 @@ class TensorboardCallback(BaseCallback):
                 if earn1 != None:
                     print('earn1 = {0}'.format(earn1))
 
+            #等过了learning_starts，再设置
+
             self.logger.record(key="train/reward", value=self.locals["rewards"][0])
         except BaseException:
             self.logger.record(key="train/reward", value=self.locals["reward"][0])
@@ -97,7 +99,7 @@ class DRLAgent:
         if "action_noise" in model_kwargs:
             n_actions = self.env.action_space.shape[-1]
             model_kwargs["action_noise"] = NOISE[model_kwargs["action_noise"]](
-                mean=np.zeros(n_actions), sigma=0.2 * np.ones(n_actions), theta=0.0001, dt=0.01    #theta越小干扰越大
+                mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions)  #, theta=195, dt=0.01    #theta越小干扰越大
             )
         print(model_kwargs)
         model = MODELS[model_name](

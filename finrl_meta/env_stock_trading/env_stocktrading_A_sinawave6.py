@@ -150,6 +150,7 @@ class StockTradingEnv(gym.Env):
         #actions = actions * self.hmax #actions initially is scaled between 0 to 1
         #actions = (actions.astype(int)) #convert into integer because we can't by fraction of shares
 
+        #print('day {0}'.format(self.day))
         data = self.df.loc[self.day, :]
         data = data.reset_index(drop=True)
         close = data.close
@@ -252,7 +253,7 @@ class StockTradingEnv(gym.Env):
                 reward_sell_all += rsa
 
 
-        reward = reward_sell_all - self.cost_friction        #需要减去摩擦费用，防止频繁交易
+        reward = reward_sell_all - self.cost_friction - self.initial_amount*0.001       #需要减去摩擦费用，防止频繁交易
 
         self.reward_memory.append(reward)
 
@@ -316,7 +317,7 @@ class StockTradingEnv(gym.Env):
 
         #action_space = self.action_space
 
-
+#当前第几天告诉callback，callback根据天数，修改sigma
         return state, reward, terminal, {'earn1':earn1}
 
 

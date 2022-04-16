@@ -24,6 +24,9 @@ class OrnsteinUhlenbeckActionNoiseSuper(OrnsteinUhlenbeckActionNoise):
 
     def reset(self) -> None:
         super(OrnsteinUhlenbeckActionNoise, self).reset()
+
+        self._sigma = self._sigma_base
+        self.noise_prev = 2 * np.random.normal(size=self._mu.shape)
         #self._sigma *= 0.99   #gyk
         #print('_sigma ={0}'.format(self._sigma))
 
@@ -42,12 +45,14 @@ class OrnsteinUhlenbeckActionNoiseSuper(OrnsteinUhlenbeckActionNoise):
         self.right = right
 
     def __call__(self) -> np.ndarray:
-        #left = [math.exp(x) for x in self.left]
-        #left = np.array(left)
-        #right = [math.exp(x) for x in self.right]
-        #right = np.array(right)
-        noise = super(OrnsteinUhlenbeckActionNoiseSuper, self).__call__()
-        noise = noise + np.random.uniform(self.left*self._sigma, self.right*self._sigma)
+        noise = (
+                self.noise_prev * 0.7
+                #+ self._theta * (-self.noise_prev) * self._dt
+                + self._sigma * np.sqrt(self._dt) * np.random.normal(size=self._mu.shape)
+        )
+
+        self._sigma *= 0.99
+        self.noise_prev = noise
         return noise
 
     #暂时实现个均匀分布吧，噪音不能是无偏的，否则可能有大量的无效操作
@@ -58,10 +63,14 @@ class NormalActionNoiseSuper(NormalActionNoise):
     def reset(self) -> None:
         super(NormalActionNoise, self).reset()
         self._sigma *= 0.99   #gyk
-        print('_sigma ={0}'.format(self._sigma))
+        #print('_sigma ={0}'.format(self._sigma))
 
     def sigmaMultiply(self, ratio) -> None:
         self._sigma *= ratio
         #if self._sigma[0] < 0.01:
             #self._sigma = 0.00001 * np.ones(2)
         print('sigmaMultiply _sigma ={0}'.format(self._sigma))
+
+    def __call__(self) -> np.ndarray:
+        self._sigma *= 0.99
+        return np.random.normal(self._mu, self._sigma)
