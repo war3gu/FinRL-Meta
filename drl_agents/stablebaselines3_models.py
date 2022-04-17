@@ -45,13 +45,65 @@ class TensorboardCallback(BaseCallback):
 
     def _on_step(self) -> bool:
         try:
+            earn1_list = []
             infos = self.locals['infos']
             for index, everyOne in enumerate(infos):
                 earn1 = everyOne['earn1']
+                if earn1:
+                    earn1_list.append(earn1)
                 if earn1 != None:
                     print('earn1 = {0}'.format(earn1))
 
-            #等过了learning_starts，再设置
+            if len(earn1_list):
+                earn1_mean = np.mean(earn1_list)
+                earn1_var = np.var(earn1_list)
+                if earn1_mean < 0.2:
+                    if earn1_var < 0.1:
+                        self.model.action_noise.setSigma(1)
+                elif earn1_mean < 0.5:
+                    if earn1_var < 0.1:
+                        self.model.action_noise.setSigma(0.5)
+                elif earn1_mean < 1:
+                    if earn1_var < 0.1:
+                        self.model.action_noise.setSigma(0.3)
+                else:
+                    self.model.action_noise.setSigma(0.1)
+
+            #发现earn1太小，sigma太小，把sigma调大点，earn1太大，sigma太大，把sigma调小点
+
+            #如果learning_starts没有结束，self.training_env.get_attr()得到的信息太离谱，直接reset重新采样
+            '''
+            num_timesteps = self.locals['self'].num_timesteps
+            learning_starts = self.locals['learning_starts']
+            if num_timesteps == learning_starts:
+                self.model.action_noise.setSigma(0.9)
+            elif num_timesteps == learning_starts*2:
+                self.model.action_noise.setSigma(0.8)
+            elif num_timesteps == learning_starts*3:
+                self.model.action_noise.setSigma(0.7)
+            elif num_timesteps == learning_starts*4:
+                self.model.action_noise.setSigma(0.6)
+            elif num_timesteps == learning_starts*5:
+                self.model.action_noise.setSigma(0.5)
+            elif num_timesteps == learning_starts*6:
+                self.model.action_noise.setSigma(0.1)
+            '''
+
+            '''
+                total_assets = self.training_env.get_attr("total_assets")
+                posi = [x for x in total_assets if x > 1]
+                if len(posi) < 3:
+                    self.training_env.reset()
+                    print('reset haha')
+            '''
+
+            #将earn1写入self.logger
+
+            #监控learning_starts前面的episode的earn1，为正数的大于一定比例，就修改learning_starts，开始训练。目的是多准备一些好的样本
+
+            #修改reward，让它有一半时间为正
+
+            #为什么网络大了一点就训练不起来了？
 
             self.logger.record(key="train/reward", value=self.locals["rewards"][0])
         except BaseException:
@@ -99,7 +151,7 @@ class DRLAgent:
         if "action_noise" in model_kwargs:
             n_actions = self.env.action_space.shape[-1]
             model_kwargs["action_noise"] = NOISE[model_kwargs["action_noise"]](
-                mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions)  #, theta=195, dt=0.01    #theta越小干扰越大
+                mean=np.zeros(n_actions), sigma=1 * np.ones(n_actions)  #, theta=195, dt=0.01    #theta越小干扰越大
             )
         print(model_kwargs)
         model = MODELS[model_name](

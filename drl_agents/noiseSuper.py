@@ -25,8 +25,8 @@ class OrnsteinUhlenbeckActionNoiseSuper(OrnsteinUhlenbeckActionNoise):
     def reset(self) -> None:
         super(OrnsteinUhlenbeckActionNoise, self).reset()
 
-        self._sigma = self._sigma_base
-        self.noise_prev = 2 * np.random.normal(size=self._mu.shape)
+        #self._sigma = self._sigma_base
+        #self.noise_prev = 2 * np.random.normal(size=self._mu.shape)
         #self._sigma *= 0.99   #gyk
         #print('_sigma ={0}'.format(self._sigma))
 
@@ -40,10 +40,16 @@ class OrnsteinUhlenbeckActionNoiseSuper(OrnsteinUhlenbeckActionNoise):
         #self._sigma = 0.1 * np.ones(2)
         #print('sigmaMultiply _sigma ={0}'.format(self._sigma))
 
+    def setSigma(self, value):
+        self._sigma = value* np.ones(len(self._sigma))
+
+    #  0.5 *
+
     def setLeftRight(self, left, right) -> None:
         self.left = left
         self.right = right
 
+    '''
     def __call__(self) -> np.ndarray:
         noise = (
                 self.noise_prev * 0.7
@@ -54,6 +60,7 @@ class OrnsteinUhlenbeckActionNoiseSuper(OrnsteinUhlenbeckActionNoise):
         self._sigma *= 0.99
         self.noise_prev = noise
         return noise
+    '''
 
     #暂时实现个均匀分布吧，噪音不能是无偏的，否则可能有大量的无效操作
 

@@ -167,7 +167,7 @@ if __name__ == "__main__":
     state_space = 1 + 1 + stock_dimension*6 + stock_dimension   #剩余天数， 现金,持仓*2，股价
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
 
-    total_timesteps = 20000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
+    total_timesteps = 50000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
     #total_timesteps = 2000
 
     env_kwargs_train = {
@@ -186,20 +186,20 @@ if __name__ == "__main__":
 
     DDPG_PARAMS = {
         "batch_size": 128,                 #一个批次训练的样本数量
-        "buffer_size": 200000,                    #每个看1000次，需要1亿次
+        "buffer_size": 100000,                    #每个看1000次，需要1亿次
         "learning_rate": 0.00075,
         "gamma": 0.99,
         "tau": 0.005,
         "target_policy_noise": 0.01,
-        "action_noise": "ornstein_uhlenbeck",
+        "action_noise": "ornstein_uhlenbeck_super",
         "gradient_steps": 200,                     # 一共训练多少个批次,1 - beta1 ** step
         "policy_delay": 2,                        # critic训练多少次才训练actor一次
         "train_freq": (500, "step"),             # 采样多少次训练一次
-        "learning_starts": 150000
+        "learning_starts": 20000
     }
 
-    actor_ratio = 8
-    critic_ratio = 8
+    actor_ratio = 12
+    critic_ratio = 12
 
     POLICY_KWARGS = dict(net_arch=dict(pi=[128*actor_ratio, 512*actor_ratio, 128*actor_ratio], qf=[128*actor_ratio,  512*actor_ratio, 128*actor_ratio]),
                      optimizer_kwargs=dict(weight_decay=0, amsgrad=False, betas=[0.95, 0.99]))
@@ -212,7 +212,7 @@ if __name__ == "__main__":
     e_train_gym = StockTradingEnv(df=train, **env_kwargs_train)
 
     n_cores = multiprocessing.cpu_count()
-    n_cores = 4
+    #n_cores = 4
     print("core count = {0}".format(n_cores))
 
     env_train, _ = e_train_gym.get_multiproc_env(n=n_cores)

@@ -60,6 +60,8 @@ class StockTradingEnv(gym.Env):
         #self.cost_friction = 0                                  #摩擦费用
         self.action_illeagl_all =0                                #为了提高采样的质量，记录无操作的次数
 
+        self.total_assets = 0
+
         self.actions_memory=[]
         self.date_memory=[]
         self.asset_memory=[]
@@ -84,6 +86,8 @@ class StockTradingEnv(gym.Env):
         self.cost_holds = [0]*self.stock_dim
         #self.cost_friction = 0                                  #摩擦费用
         self.action_illeagl_all = 0                             #为了提高采样的质量，记录无操作的次数
+
+        self.total_assets = 0
 
         self.actions_memory=[]
         self.date_memory=[]
@@ -438,6 +442,7 @@ class StockTradingEnv(gym.Env):
         close = data.close
         total_assets = self.cash + sum(np.array(close)*np.array(self.holds))
         #print('_update_total_assets')
+        self.total_assets = total_assets/self.initial_amount
         return total_assets
 
     def _update_state(self):
