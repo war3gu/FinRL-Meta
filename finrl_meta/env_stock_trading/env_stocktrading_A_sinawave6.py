@@ -57,7 +57,7 @@ class StockTradingEnv(gym.Env):
         self.cash = self.initial_amount                         #现金
         self.holds = [0]*self.stock_dim                         #持仓
         self.cost_holds = [0]*self.stock_dim                    #个股持仓的总费用，买入卖出会变
-        self.cost_friction = 0                                  #摩擦费用
+        #self.cost_friction = 0                                  #摩擦费用
         self.action_illeagl_all =0                                #为了提高采样的质量，记录无操作的次数
 
         self.actions_memory=[]
@@ -82,7 +82,7 @@ class StockTradingEnv(gym.Env):
 
         self.holds = [0]*self.stock_dim                         #持仓
         self.cost_holds = [0]*self.stock_dim
-        self.cost_friction = 0                                  #摩擦费用
+        #self.cost_friction = 0                                  #摩擦费用
         self.action_illeagl_all = 0                             #为了提高采样的质量，记录无操作的次数
 
         self.actions_memory=[]
@@ -144,7 +144,7 @@ class StockTradingEnv(gym.Env):
     def step(self, actions):
         #print('step')
 
-        self.cost_friction = 0
+        #self.cost_friction = 0
 
 
         #actions = actions * self.hmax #actions initially is scaled between 0 to 1
@@ -154,6 +154,7 @@ class StockTradingEnv(gym.Env):
         data = self.df.loc[self.day, :]
         data = data.reset_index(drop=True)
         close = data.close
+        avg_price = sum(close)/len(close)
 
         actions_old = actions.copy()
 
@@ -173,27 +174,43 @@ class StockTradingEnv(gym.Env):
         sell1_stock = self.holds[1]*sell_ratio[1]
 
         reward_sell_all = 0
+        reward_buy_all  = 0
+
+        share_sell_all = 0
+        share_buy_all = 0
 
         order = self._get_Order()
 
         if order == 0:                      #先买后卖
             #print('haha')
-            self._buy_stock(0, buy0_stock)
-            self._buy_stock(1, buy1_stock)
+            sba0, rba0 = self._buy_stock(0, buy0_stock)
+            reward_buy_all += rba0
+            share_buy_all += sba0
+            sba1, rba1 = self._buy_stock(1, buy1_stock)
+            reward_buy_all += rba1
+            share_buy_all  += sba1
 
-            _, rsa0 = self._sell_stock(0, sell0_stock)
+            ssa0, rsa0 = self._sell_stock(0, sell0_stock)
             reward_sell_all += rsa0
-            _, rsa1 = self._sell_stock(1, sell1_stock)
+            share_sell_all += ssa0
+            ssa1, rsa1 = self._sell_stock(1, sell1_stock)
             reward_sell_all += rsa1
+            share_sell_all += ssa1
         else:                               #先卖后买
             #print('xixi')
-            _, rsa0 = self._sell_stock(0, sell0_stock)
+            ssa0, rsa0 = self._sell_stock(0, sell0_stock)
             reward_sell_all += rsa0
-            _, rsa1 = self._sell_stock(1, sell1_stock)
+            share_sell_all += ssa0
+            ssa1, rsa1 = self._sell_stock(1, sell1_stock)
             reward_sell_all += rsa1
+            share_sell_all += ssa1
 
-            self._buy_stock(0, buy0_stock)
-            self._buy_stock(1, buy1_stock)
+            sba0, rba0 = self._buy_stock(0, buy0_stock)
+            reward_buy_all += rba0
+            share_buy_all += sba0
+            sba1, rba1 = self._buy_stock(1, buy1_stock)
+            reward_buy_all += rba1
+            share_buy_all += sba1
 
 
 
@@ -252,8 +269,22 @@ class StockTradingEnv(gym.Env):
                 _, rsa = self._sell_stock(index, self.holds[index])
                 reward_sell_all += rsa
 
+        '''
+        reward_sell_all = 0
+        reward_buy_all  = 0
 
-        reward = reward_sell_all - self.cost_friction - self.initial_amount*0.001       #需要减去摩擦费用，防止频繁交易
+        share_sell_all = 0
+        share_buy_all = 0
+        '''
+
+        reward = reward_sell_all + reward_buy_all # - self.cost_friction - self.initial_amount*0.001       #需要减去摩擦费用，防止频繁交易
+
+        if share_buy_all + share_sell_all <= 100:                                                          #无操作，cash算利息，防止ai摆烂，因为买的收益为负
+            reward += -self.cash * 1e-4
+
+        #repetitive = min(share_sell_all, share_buy_all)                              #重复买卖会产生摩擦成本，这就是惩罚，似乎不需要特别的惩罚.实盘的时候把重复部分消除掉就行了
+        #reward += -repetitive * (self.buy_cost_pct + self.sell_cost_pct) * avg_price
+
 
         self.reward_memory.append(reward)
 
@@ -349,9 +380,8 @@ class StockTradingEnv(gym.Env):
 
 
                     self.cost_holds[index] = cost_avg * self.holds[index]                          #新的总成本
-                    self.cost_friction += price * sell_num_shares * self.sell_cost_pct             #更新交易摩擦费用
-                    reward_sell = sell_amount - cost_avg*sell_num_shares                           #获得金额减去成本=赚的
-                    #self.trades+=1                                                                #更新交易数量
+                    #self.cost_friction += price * sell_num_shares * self.sell_cost_pct             #更新交易摩擦费用
+                    reward_sell = sell_amount - cost_avg*sell_num_shares                           #卖的收益可正可负，考虑了摩擦成本
                 else:
                     sell_num_shares = 0
             else:
@@ -370,6 +400,7 @@ class StockTradingEnv(gym.Env):
             data = data.reset_index(drop=True)
             close = data.close
             price = close[index]
+            reward_buy = 0
             if price > 0:                                                                 #股票价格大于0
                 # Buy only if the price is > 0 (no missing data in this particular date)
                 available_amount = self.cash // price                                    #所有钱能买的数量
@@ -384,16 +415,16 @@ class StockTradingEnv(gym.Env):
                 self.holds[index] += buy_num_shares                                        #更新股票数量
 
                 self.cost_holds[index] += buy_amount                                       #买入花费
-                self.cost_friction += price * buy_num_shares * self.buy_cost_pct           #更新交易摩擦费用
-                #self.trades+=1                                                            #更新交易数量
+                #self.cost_friction += price * buy_num_shares * self.buy_cost_pct           #更新交易摩擦费用
+                reward_buy = -price * buy_num_shares * self.buy_cost_pct                   #买的收益为负数,包含了摩擦费用
             else:
                 buy_num_shares = 0
 
-            return buy_num_shares
+            return buy_num_shares, reward_buy
 
-        buy_num_shares = _do_buy()
+        buy_num_shares, reward_buy = _do_buy()
 
-        return buy_num_shares
+        return buy_num_shares, reward_buy
 
     def _get_Order(self):
         total_assets = self._update_total_assets()
