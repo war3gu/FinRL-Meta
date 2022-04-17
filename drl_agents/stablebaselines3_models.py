@@ -60,12 +60,18 @@ class TensorboardCallback(BaseCallback):
                 if earn1_mean < 0.2:
                     if earn1_var < 0.1:
                         self.model.action_noise.setSigma(1)
-                elif earn1_mean < 0.5:
+                elif earn1_mean < 0.4:
                     if earn1_var < 0.1:
                         self.model.action_noise.setSigma(0.8)
-                elif earn1_mean < 1:
+                elif earn1_mean < 0.6:
                     if earn1_var < 0.1:
                         self.model.action_noise.setSigma(0.6)
+                elif earn1_mean < 0.8:
+                    if earn1_var < 0.1:
+                        self.model.action_noise.setSigma(0.5)
+                elif earn1_mean < 1:
+                    if earn1_var < 0.1:
+                        self.model.action_noise.setSigma(0.4)
                 else:
                     self.model.action_noise.setSigma(0.1)
 
