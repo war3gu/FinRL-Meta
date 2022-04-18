@@ -38,70 +38,162 @@ class TensorboardCallback(BaseCallback):
     def __init__(self, verbose=0):
         super(TensorboardCallback, self).__init__(verbose)
 
+        self.earn_mean = -10
+        self.earn_max = -10
+        self.earn_min = 10
+
+        self.earn1_mean = -10
+        self.sigma_base = 1
+        self.static_count = 0
+        self.big_sigma_count = 0
+
+        self.earn_list = []
+
+        self.need_reset = False
+
+        self.gradient_steps_old = 100
+
+
+    def _on_rollout_start(self) -> None:
+        print('_on_rollout_start in TensorboardCallback')
+
+        if self.model.gradient_steps == 0:
+            self.model.gradient_steps = self.gradient_steps_old
+
+        if self.need_reset == True:
+            self.need_reset = False
+            self.model.replay_buffer.reset()     #把buff清空
+
+    def _on_rollout_end(self) -> None:
+        print('_on_rollout_end in TensorboardCallback')   #开始训练
+        num_timesteps = self.locals['self'].num_timesteps
+        learning_starts = self.locals['self'].learning_starts
+
+        if num_timesteps < learning_starts:
+            self.earn_list = []
+            return
+
+        if len(self.earn_list) < 2:
+            return
+
+        succ_count = 0
+
+
+        earn_mean = np.mean(self.earn_list)
+        earn_min = np.min(self.earn_list)
+        earn_max = np.max(self.earn_list)
+
+        earn_var = np.var(self.earn_list)
+        sigma = self.model.action_noise.getSigma()
+
+        if self.earn_mean < earn_mean:
+            self.earn_mean = earn_mean
+            print("earn_mean {0}".format(earn_mean))
+            succ_count += 1
+        if self.earn_max < earn_max:
+            self.earn_max = earn_max
+            print("earn_max {0}".format(earn_max))
+            succ_count += 1
+        if self.earn_min < earn_min:
+            self.earn_min = earn_min
+            print("earn_min {0}".format(earn_min))
+            succ_count += 1
+
+        if succ_count > 0:
+            print("train")
+        else:
+            self.gradient_steps_old = self.model.gradient_steps
+            self.model.gradient_steps = 0
+            print("do not train")
+
+        print('sigma = {0}'.format(sigma))
+
+        '''
+        if sigma == 1:
+            if earn_var < 0.05 * math.fabs(earn_mean):
+                self.model.action_noise.setSigma(2)
+                print('setSigma  2')
+                self.need_reset = True
+        elif sigma == 2:
+            self.model.action_noise.setSigma(1)
+            print('setSigma  1')
+        else:
+            self.model.action_noise.setSigma(1)
+            print('setSigma  1')
+        '''
+
+        #
+
+        #通过统计self.earn_list里面正的个数， 设置gradient_steps来决定是否训练。mean越大越有训练价值
+
+        self.earn_list = []
+
+
     def _on_training_start(self) -> None:
         print('_on_training_start in TensorboardCallback')
         #learn once，change noise once
         #self.model.action_noise.sigmaBaseMultiply(0.9)       #learn的时候修改base
 
     def _on_step(self) -> bool:
-        try:
+        #try:
+        num_timesteps = self.locals['self'].num_timesteps
+        learning_starts = self.locals['learning_starts']
+
+
+        start = False
+        if num_timesteps >= learning_starts:
+            start = True
+            #self.model.action_noise.setSigma(0.1)
+
+        if start == True:
             earn1_list = []
             infos = self.locals['infos']
             for index, everyOne in enumerate(infos):
                 earn1 = everyOne['earn1']
                 if earn1:
+                    self.earn_list.append(earn1)
                     earn1_list.append(earn1)
-                if earn1 != None:
                     print('earn1 = {0}'.format(earn1))
-
-            if len(earn1_list):
+            #if len(earn1_list):
+            if False:
                 earn1_mean = np.mean(earn1_list)
                 earn1_var = np.var(earn1_list)
-                if earn1_mean < 0.2:
-                    if earn1_var < 0.1:
-                        self.model.action_noise.setSigma(1)
-                elif earn1_mean < 0.4:
-                    if earn1_var < 0.1:
-                        self.model.action_noise.setSigma(0.8)
-                elif earn1_mean < 0.6:
-                    if earn1_var < 0.1:
-                        self.model.action_noise.setSigma(0.6)
-                elif earn1_mean < 0.8:
-                    if earn1_var < 0.1:
-                        self.model.action_noise.setSigma(0.5)
-                elif earn1_mean < 1:
-                    if earn1_var < 0.1:
-                        self.model.action_noise.setSigma(0.4)
+                sigma = self.model.action_noise.getSigma()
+
+                print('sigma = {0}'.format(sigma))
+
+                if sigma == 0.1:
+                    if earn1_var < 0.05 * math.fabs(earn1_mean):
+                        self.static_count += 1
+                        if self.static_count > 50:
+                            self.static_count = 0
+                            self.big_sigma_count = 5
+                            self.model.action_noise.setSigma(2)
+                            print('setSigma  2')
+                            #self.model.replay_buffer.reset()     #把buff清空
+                            #self.locals['self'].num_timesteps = 0
+                    else:
+                        self.static_count = 0
+                elif sigma == 2:
+                    if self.big_sigma_count > 0:
+                        self.big_sigma_count -= 1
+                        if self.big_sigma_count == 0:
+                            self.model.action_noise.setSigma(0.1)
+                            print('setSigma  0.1')
+                    else:
+                        self.model.action_noise.setSigma(0.1)
+                        print('setSigma  0.1')
                 else:
                     self.model.action_noise.setSigma(0.1)
+                    #print('setSigma  0.1')
 
-            #发现earn1太小，sigma太小，把sigma调大点，earn1太大，sigma太大，把sigma调小点
 
-            #如果learning_starts没有结束，self.training_env.get_attr()得到的信息太离谱，直接reset重新采样
-            '''
-            num_timesteps = self.locals['self'].num_timesteps
-            learning_starts = self.locals['learning_starts']
-            if num_timesteps == learning_starts:
-                self.model.action_noise.setSigma(0.9)
-            elif num_timesteps == learning_starts*2:
-                self.model.action_noise.setSigma(0.8)
-            elif num_timesteps == learning_starts*3:
-                self.model.action_noise.setSigma(0.7)
-            elif num_timesteps == learning_starts*4:
-                self.model.action_noise.setSigma(0.6)
-            elif num_timesteps == learning_starts*5:
-                self.model.action_noise.setSigma(0.5)
-            elif num_timesteps == learning_starts*6:
-                self.model.action_noise.setSigma(0.1)
-            '''
 
-            '''
-                total_assets = self.training_env.get_attr("total_assets")
-                posi = [x for x in total_assets if x > 1]
-                if len(posi) < 3:
-                    self.training_env.reset()
-                    print('reset haha')
-            '''
+
+
+
+
+
 
             #将earn1写入self.logger
 
@@ -111,9 +203,9 @@ class TensorboardCallback(BaseCallback):
 
             #为什么网络大了一点就训练不起来了？
 
-            self.logger.record(key="train/reward", value=self.locals["rewards"][0])
-        except BaseException:
-            self.logger.record(key="train/reward", value=self.locals["reward"][0])
+        self.logger.record(key="train/reward", value=self.locals["rewards"][0])
+        #except BaseException:
+            #self.logger.record(key="train/reward", value=self.locals["reward"][0])
         return True
 
 
@@ -157,7 +249,7 @@ class DRLAgent:
         if "action_noise" in model_kwargs:
             n_actions = self.env.action_space.shape[-1]
             model_kwargs["action_noise"] = NOISE[model_kwargs["action_noise"]](
-                mean=np.zeros(n_actions), sigma=1 * np.ones(n_actions)  #, theta=195, dt=0.01    #theta越小干扰越大
+                mean=np.zeros(n_actions), sigma=0.3 * np.ones(n_actions)  #, theta=195, dt=0.01    #theta越小干扰越大
             )
         print(model_kwargs)
         model = MODELS[model_name](

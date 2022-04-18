@@ -5,6 +5,7 @@ from typing import Iterable, List, Optional
 from stable_baselines3.common.noise import (
     NormalActionNoise,
     OrnsteinUhlenbeckActionNoise,
+    VectorizedActionNoise,
 )
 
 class OrnsteinUhlenbeckActionNoiseSuper(OrnsteinUhlenbeckActionNoise):
@@ -20,6 +21,7 @@ class OrnsteinUhlenbeckActionNoiseSuper(OrnsteinUhlenbeckActionNoise):
         self._sigma_base = sigma.copy()
         self.left = np.array([-1, -1])
         self.right = np.array([1, 1])
+        self._sigma_value = 0.3
         super(OrnsteinUhlenbeckActionNoiseSuper, self).__init__(mean, sigma, theta, dt, initial_noise)
 
     def reset(self) -> None:
@@ -41,7 +43,11 @@ class OrnsteinUhlenbeckActionNoiseSuper(OrnsteinUhlenbeckActionNoise):
         #print('sigmaMultiply _sigma ={0}'.format(self._sigma))
 
     def setSigma(self, value):
+        self._sigma_value = value
         self._sigma = value* np.ones(len(self._sigma))
+
+    def getSigma(self) -> float:
+        return self._sigma_value
 
     #  0.5 *
 

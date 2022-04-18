@@ -186,16 +186,16 @@ if __name__ == "__main__":
 
     DDPG_PARAMS = {
         "batch_size": 128,                 #一个批次训练的样本数量
-        "buffer_size": 100000,                    #每个看1000次，需要1亿次
+        "buffer_size": 4000,                    #每个看1000次，需要1亿次
         "learning_rate": 0.00075,
         "gamma": 0.99,
         "tau": 0.005,
         "target_policy_noise": 0.01,
         "action_noise": "ornstein_uhlenbeck_super",
-        "gradient_steps": 200,                     # 一共训练多少个批次,1 - beta1 ** step
+        "gradient_steps": 400,                     # 一共训练多少个批次,1 - beta1 ** step
         "policy_delay": 2,                        # critic训练多少次才训练actor一次
-        "train_freq": (500, "step"),             # 采样多少次训练一次
-        "learning_starts": 20000
+        "train_freq": (1000, "step"),             # 采样多少次训练一次
+        "learning_starts": 2000
     }
 
     actor_ratio = 12
