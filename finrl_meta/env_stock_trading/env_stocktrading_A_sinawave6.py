@@ -127,8 +127,8 @@ class StockTradingEnv(gym.Env):
 
         prices = data.close.values.tolist()
         avg_price = sum(prices)/len(prices)
-        #ran = random.random()                 #随机买。因为开始日期是随机的，initial_amount也可以是随机的。需要新加域，表明当前的cash范围,然后在范围内随机一个值
-        ran = 0.5
+        ran = random.random()                 #随机买。因为开始日期是随机的，initial_amount也可以是随机的。需要新加域，表明当前的cash范围,然后在范围内随机一个值
+        #ran = 0.5
         buy_nums_each_tic = ran*self.cash//(avg_price*len(prices))  # only use half of the initial amount
         buy_nums_each_tic = buy_nums_each_tic#//100*100
         cost = sum(prices)*buy_nums_each_tic
@@ -285,6 +285,8 @@ class StockTradingEnv(gym.Env):
 
         if share_buy_all + share_sell_all <= 100:                                                          #无操作，cash算利息，防止ai摆烂，因为买的收益为负
             reward += -self.cash * 1e-4
+
+        #把前后两天的资产差算入reward？
 
         #repetitive = min(share_sell_all, share_buy_all)                              #重复买卖会产生摩擦成本，这就是惩罚，似乎不需要特别的惩罚.实盘的时候把重复部分消除掉就行了
         #reward += -repetitive * (self.buy_cost_pct + self.sell_cost_pct) * avg_price

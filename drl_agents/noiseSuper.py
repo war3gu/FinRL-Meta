@@ -18,14 +18,23 @@ class OrnsteinUhlenbeckActionNoiseSuper(OrnsteinUhlenbeckActionNoise):
             dt: float = 1e-2,
             initial_noise: Optional[np.ndarray] = None,
     ):
-        self._sigma_base = sigma.copy()
-        self.left = np.array([-1, -1])
-        self.right = np.array([1, 1])
-        self._sigma_value = 0.3
+        #self._sigma_base = sigma.copy()
+        #self.left = np.array([-1, -1])
+        #self.right = np.array([1, 1])
+        self._sigma_value = None
+        self._theta_value = None
         super(OrnsteinUhlenbeckActionNoiseSuper, self).__init__(mean, sigma, theta, dt, initial_noise)
+
+        #self._sigma = self._sigma_value * np.ones(len(self._sigma))
 
     def reset(self) -> None:
         super(OrnsteinUhlenbeckActionNoise, self).reset()
+
+        if self._sigma_value:
+            self._sigma = self._sigma_value * np.ones(len(self._sigma))
+
+        if self._theta_value:
+            self._theta = self._theta_value
 
         #self._sigma = self._sigma_base
         #self.noise_prev = 2 * np.random.normal(size=self._mu.shape)
@@ -33,40 +42,39 @@ class OrnsteinUhlenbeckActionNoiseSuper(OrnsteinUhlenbeckActionNoise):
         #print('_sigma ={0}'.format(self._sigma))
 
     def sigmaBaseMultiply(self, ratio) -> None:
-        self._sigma_base *= ratio
-        self._sigma = self._sigma_base.copy()
-        print('_sigma_base ={0}'.format(self._sigma_base))
+        print('sigmaBaseMultiply')
+        #self._sigma_base *= ratio
+        #self._sigma = self._sigma_base.copy()
+        #print('_sigma_base ={0}'.format(self._sigma_base))
 
     def sigmaMultiply(self, ratio) -> None:
-        self._sigma *= ratio
+        print('sigmaMultiply')
+        #self._sigma *= ratio
         #self._sigma = 0.1 * np.ones(2)
         #print('sigmaMultiply _sigma ={0}'.format(self._sigma))
 
     def setSigma(self, value):
         self._sigma_value = value
-        self._sigma = value* np.ones(len(self._sigma))
+        self._sigma = self._sigma_value * np.ones(len(self._sigma))
 
     def getSigma(self) -> float:
         return self._sigma_value
 
+    def setTheta(self, value):
+        self._theta_value = value
+        self._theta = self._theta_value
+
     #  0.5 *
 
-    def setLeftRight(self, left, right) -> None:
-        self.left = left
-        self.right = right
+    #def setLeftRight(self, left, right) -> None:
+        #self.left = left
+        #self.right = right
 
-    '''
     def __call__(self) -> np.ndarray:
-        noise = (
-                self.noise_prev * 0.7
-                #+ self._theta * (-self.noise_prev) * self._dt
-                + self._sigma * np.sqrt(self._dt) * np.random.normal(size=self._mu.shape)
-        )
-
-        self._sigma *= 0.99
-        self.noise_prev = noise
+        noise = super(OrnsteinUhlenbeckActionNoiseSuper, self).__call__()
+        #self._sigma *= 0.99
         return noise
-    '''
+
 
     #暂时实现个均匀分布吧，噪音不能是无偏的，否则可能有大量的无效操作
 
