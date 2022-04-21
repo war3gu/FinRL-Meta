@@ -60,9 +60,14 @@ class TensorboardCallback(BaseCallback):
         #self.sigma_list_collect_scratch = [40, 30, 20, 10, 8, 6, 4, 2]   #scratch对应的动作完全随机
         #self.sigma_list_collect = [40, 30, 20, 10, 8, 6, 4, 2, 1, 0.5]
 
-        self.sigma_list_collect_scratch = [9, 3, 1, 0.8, 0.5, 0.3, 0.2, 0.1]      #可能这组参数只对8*8的网络有效
-        self.sigma_list_collect = [1, 0.8, 0.5, 0.3, 0.2, 0.1]                    #训练的动作是actor产生的，noise不能太离谱
-        self.theta_list = [1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001]
+        #self.sigma_list_collect_scratch = [9, 3, 1, 0.8, 0.5, 0.3, 0.2, 0.1]      #可能这组参数只对8*8的网络有效
+        #self.sigma_list_collect = [1, 0.8, 0.5, 0.3, 0.2, 0.1]                    #训练的动作是actor产生的，noise不能太离谱
+        #self.theta_list = [1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001]
+        #self.sigma_list_collect_scratch = [0.1]
+        #self.sigma_list_collect = [9, 3, 1, 0.8, 0.5, 0.3, 0.2, 0.1]
+        self.sigma_list_collect_scratch = [0.1]
+        self.sigma_list_collect = [0.1]
+        self.theta_list = [0.0001]
 
     def change_noise(self) -> None:
         #随机的设置一个sigma，theta
@@ -182,7 +187,7 @@ class DRLAgent:
         if "action_noise" in model_kwargs:
             n_actions = self.env.action_space.shape[-1]
             model_kwargs["action_noise"] = NOISE[model_kwargs["action_noise"]](
-                mean=np.zeros(n_actions), sigma=10 * np.ones(n_actions)#, theta=100 #, dt=0.01    #theta越小干扰越大
+                mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions)#, theta=100 #, dt=0.01    #theta越小干扰越大
             )
         print(model_kwargs)
         model = MODELS[model_name](

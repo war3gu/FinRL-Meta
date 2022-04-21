@@ -17,7 +17,7 @@ display.set_matplotlib_formats("svg")
 
 from finrl_meta import config
 from finrl_meta.data_processors.processor_tusharepro import TushareProProcessor, ReturnPlotter
-from finrl_meta.env_stock_trading.env_stocktrading_A_sinawave6 import StockTradingEnv
+from finrl_meta.env_stock_trading.env_stocktrading_A_sinawave7 import StockTradingEnv
 from drl_agents.stablebaselines3_models import DRLAgent
 
 pd.options.display.max_columns = None
@@ -164,7 +164,7 @@ if __name__ == "__main__":
     #draw_results(trade, None, None)
 
     stock_dimension = len(train.tic.unique())
-    state_space = 1 + 1 + stock_dimension*6 + stock_dimension   #剩余天数， 现金,持仓*2，股价
+    state_space = 1 + stock_dimension*6 + stock_dimension   #剩余天数， 现金,持仓*2，股价
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
 
     total_timesteps = 400000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
@@ -178,7 +178,7 @@ if __name__ == "__main__":
         "sell_cost_pct": 1.0687e-3,
         "reward_scaling": 1e-2,
         "state_space": state_space,
-        "action_space": 5,                                   #6是5个action
+        "action_space": 2,                                   #7是3个action
         "out_of_cash_penalty": 0.001,
         "cash_limit": 0.1,
         "mode":"train",                                      #根据这个来决定是训练还是交易
@@ -186,7 +186,7 @@ if __name__ == "__main__":
 
     DDPG_PARAMS = {
         "batch_size": 128*2,                 #一个批次训练的样本数量
-        "buffer_size": 500000,                    #每个看1000次，需要1亿次
+        "buffer_size": 20000,                    #每个看1000次，需要1亿次
         "learning_rate": 0.001,
         "gamma": 0.99,
         "tau": 0.005,                          #0.005
@@ -195,7 +195,7 @@ if __name__ == "__main__":
         "gradient_steps": 200,                     # 一共训练多少个批次,1 - beta1 ** step
         "policy_delay": 2,                        # critic训练多少次才训练actor一次
         "train_freq": (1000, "step"),             # 采样多少次训练一次
-        "learning_starts": 490000                  #这个一定要很大，因为AI的初始化输出大多是1，-1
+        "learning_starts": 10000                  #这个一定要很大，因为AI的初始化输出大多是1，-1
     }
 
     actor_ratio = 8
