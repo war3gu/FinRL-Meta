@@ -61,12 +61,18 @@ class TensorboardCallback(BaseCallback):
         #self.sigma_list_collect = [40, 30, 20, 10, 8, 6, 4, 2, 1, 0.5]
 
         #self.sigma_list_collect_scratch = [9, 3, 1, 0.8, 0.5, 0.3, 0.2, 0.1]      #可能这组参数只对8*8的网络有效
-        #self.sigma_list_collect = [1, 0.8, 0.5, 0.3, 0.2, 0.1]                    #训练的动作是actor产生的，noise不能太离谱
+        #self.sigma_list_collect = [9, 3, 1, 0.8, 0.5, 0.3, 0.2, 0.1]                    #训练的动作是actor产生的，noise不能太离谱
+
+        #sigma太多，似乎就拟合不了了
+
         #self.theta_list = [1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001]
-        #self.sigma_list_collect_scratch = [0.1]
-        #self.sigma_list_collect = [9, 3, 1, 0.8, 0.5, 0.3, 0.2, 0.1]
-        self.sigma_list_collect_scratch = [0.1]
-        self.sigma_list_collect = [0.1]
+        e = 2.72
+
+        self.sigma_list_collect_scratch = [e*3, e*2, e, 1/e, 0.1]
+        self.sigma_list_collect = [e*3, e*2, e, 1/e, 0.1]
+        #self.sigma_list_collect_scratch = [0.5]
+        #self.sigma_list_collect = [0.5]
+        self.theta_list_scratch = [0.0001]
         self.theta_list = [0.0001]
 
     def change_noise(self) -> None:
@@ -77,10 +83,11 @@ class TensorboardCallback(BaseCallback):
         learning_starts = self.locals['self'].learning_starts
         sigma = None
         theta = None
-        noise_end = 4500000
+        noise_end = 15000000
+        '''
         if num_timesteps <= learning_starts:
             sigma = random.sample(self.sigma_list_collect_scratch, 1)
-            theta = random.sample(self.theta_list, 1)
+            theta = random.sample(self.theta_list_scratch, 1)
             print('scratch')
         elif num_timesteps <= learning_starts + noise_end:
             sigma = random.sample(self.sigma_list_collect, 1)
@@ -88,8 +95,35 @@ class TensorboardCallback(BaseCallback):
             print('before noise_end')
         else:
             sigma = [0.1]
-            theta = [0.15]
+            theta = [0.0001]
             print('after noise_end')
+        '''
+        if num_timesteps <= learning_starts:
+            sigma = [1]
+        else:
+            sigma = [1]
+
+        '''
+        elif num_timesteps <= learning_starts*2:
+            sigma = [10]
+        elif num_timesteps <= learning_starts*3:
+            sigma = [5]
+        elif num_timesteps <= learning_starts*4:
+            sigma = [1]
+        elif num_timesteps <= learning_starts*5:
+            sigma = [0.6]
+        elif num_timesteps <= learning_starts*6:
+            sigma = [0.5]
+        elif num_timesteps <= learning_starts*7:
+            sigma = [0.4]
+        elif num_timesteps <= learning_starts*8:
+            sigma = [0.3]
+        elif num_timesteps <= learning_starts*9:
+            sigma = [0.2]
+        '''
+
+        theta = [100]
+
 
         print('sigma = {0}'.format(sigma[0]))
         print('theta = {0}'.format(theta[0]))
@@ -97,8 +131,7 @@ class TensorboardCallback(BaseCallback):
         self.model.action_noise.setTheta(theta[0])
 
 
-
-        action_noise_list = self.locals['action_noise'].noises
+        action_noise_list = [self.locals['action_noise']]#.noises
         for index, everyOne in enumerate(action_noise_list):
             action_noise = action_noise_list[index]
             action_noise.setSigma(sigma[0])

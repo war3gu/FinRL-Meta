@@ -48,7 +48,7 @@ class StockTradingEnv(gym.Env):
         self.cash_limit = cash_limit                            #资金极限占比
 
 ###################################################################################
-        self.action_space = spaces.Box(low = 0, high = 1,shape = (self.action_space,))
+        self.action_space = spaces.Box(low = -1, high = 1,shape = (self.action_space,))
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape = (self.state_space,))
 ####################################################################################
 
@@ -58,7 +58,10 @@ class StockTradingEnv(gym.Env):
         self.holds = [0]*self.stock_dim                         #持仓
         self.cost_holds = [0]*self.stock_dim                    #个股持仓的总费用，买入卖出会变
         #self.cost_friction = 0                                  #摩擦费用
-        self.action_illeagl_all =0                                #为了提高采样的质量，记录无操作的次数
+
+        self.stock_fail_count = [0]*self.stock_dim             #每个回合失败的股票操作数目
+
+        self.stock_succ_count = [0]*self.stock_dim
 
         self.total_assets = 0
 
@@ -66,6 +69,8 @@ class StockTradingEnv(gym.Env):
         self.date_memory=[]
         self.asset_memory=[]
         self.reward_memory=[]
+
+        self.ppp = False
 
 
     def reset(self):
@@ -85,7 +90,9 @@ class StockTradingEnv(gym.Env):
         self.holds = [0]*self.stock_dim                         #持仓
         self.cost_holds = [0]*self.stock_dim
         #self.cost_friction = 0                                  #摩擦费用
-        self.action_illeagl_all = 0                             #为了提高采样的质量，记录无操作的次数
+        self.stock_fail_count = [0]*self.stock_dim              #每个回合失败的股票操作数目
+
+        self.stock_succ_count = [0]*self.stock_dim
 
         self.total_assets = 0
 
@@ -98,6 +105,11 @@ class StockTradingEnv(gym.Env):
         self.date_memory.append(self._get_date())
         self.asset_memory.append(self.cash)
         self.cash_memory.append(self.cash)
+
+        ran = random.random()
+        self.ppp = False
+        if ran < 0.05:
+            self.ppp = True
 
 
         #if self.mode == 'train':
@@ -167,15 +179,16 @@ class StockTradingEnv(gym.Env):
 
         actions_old = actions.copy()
 
-        assets_ratio = actions[0:3]
+        assets_ratio = actions[0:2]
 
+        '''
         double = 5
         #cash_ratio = math.exp(double*assets_ratio[2])/(math.exp(double*assets_ratio[0])+math.exp(double*assets_ratio[1])+math.exp(double*assets_ratio[2]))
 
-        #ratio_base = 10**assets_ratio[0] - 1 + 10**assets_ratio[1] - 1 + 1
+        ratio_base = 10**assets_ratio[0] - 1 + 10**assets_ratio[1] - 1 + 1
 
-        stock0_ratio = assets_ratio[0]
-        stock1_ratio = (1-assets_ratio[0])*assets_ratio[1]
+        stock0_ratio = (10**assets_ratio[0] - 1)/ratio_base
+        stock1_ratio = (10**assets_ratio[1] - 1)/ratio_base
 
 
         #stock0_ratio = assets_ratio[0]
@@ -185,32 +198,42 @@ class StockTradingEnv(gym.Env):
         #cash_amount = begin_total_asset*cash_ratio          #用不到
         stock0_amount = begin_total_asset*stock0_ratio/close[0]
         stock1_amount = begin_total_asset*stock1_ratio/close[1]
+        '''
 
-        stock0_amount_exchange = stock0_amount - self.holds[0]
-        stock1_amount_exchange = stock1_amount - self.holds[1]
+        stock0_amount_exchange = self.hmax * assets_ratio[0]
+        stock1_amount_exchange = self.hmax * assets_ratio[1]
+
+        #if self.ppp:
+            #print('stock_amount_exchange {0}        {1}'.format(stock0_amount_exchange, stock1_amount_exchange))
+
+        #if self.day == 100:
+            #print('100')
 
         reward_sell_all = 0
         reward_buy_all  = 0
         share_sell_all = 0
         share_buy_all = 0
 
-        if stock0_amount_exchange > 0:
-            sba0, rba0 = self._buy_stock(0, stock0_amount_exchange)
-            reward_buy_all += rba0
-            share_buy_all  += sba0
-        else:
+        if stock0_amount_exchange < 0:
             ssa0, rsa0 = self._sell_stock(0, stock0_amount_exchange)
             reward_sell_all += rsa0
             share_sell_all  += ssa0
 
-        if stock1_amount_exchange > 0:
-            sba1, rba1 = self._buy_stock(1, stock1_amount_exchange)
-            reward_buy_all += rba1
-            share_buy_all  += sba1
-        else:
+        if stock1_amount_exchange < 0:
             ssa1, rsa1 = self._sell_stock(1, stock1_amount_exchange)
             reward_sell_all += rsa1
             share_sell_all  += ssa1
+
+        if stock0_amount_exchange >= 0:
+            sba0, rba0 = self._buy_stock(0, stock0_amount_exchange)
+            reward_buy_all += rba0
+            share_buy_all  += sba0
+
+        if stock1_amount_exchange >= 0:
+            sba1, rba1 = self._buy_stock(1, stock1_amount_exchange)
+            reward_buy_all += rba1
+            share_buy_all  += sba1
+
 
 
 
@@ -269,7 +292,7 @@ class StockTradingEnv(gym.Env):
         terminal = self.day >= len(self.df.index.unique())-1
 
 
-        state = self._update_state()                               #新的一天，close和技术指标都变了
+        #state = self._update_state()                               #新的一天，close和技术指标都变了
 
         end_total_asset = self._update_total_assets()
 
@@ -280,35 +303,54 @@ class StockTradingEnv(gym.Env):
             self.asset_memory.append(end_total_asset)
             self.cash_memory.append(self.cash)
 
+        reward_cash_all = self.cash * (100e-5)
+
         reward_end = 0
         if terminal == True:            #剩余的，按照最后一天价格全部卖掉
             for index in range(self.stock_dim):
                 _, rsa = self._sell_stock(index, self.holds[index])
-                #reward_sell_all += rsa
-                reward_sell_all += 0               #这个不能算入reward
+                #reward_sell_all += rsa                                #导致异常?
+                reward_sell_all += 0
             reward_end = end_total_asset - self.initial_amount         #最后的盈利算入reward，会慢慢传到到前面的状态
 
-        '''
-        reward_sell_all = 0
-        reward_buy_all  = 0
-
-        share_sell_all = 0
-        share_buy_all = 0
-        '''
-
-        #reward_buy_all = -reward_buy_all  #买不算摩擦费用，买的摩擦费用算在卖中,鼓励交易.
 
         #change = end_total_asset - begin_total_asset
 
-        reward = reward_sell_all + reward_buy_all    # - self.cost_friction - self.initial_amount*0.001       #需要减去摩擦费用，防止频繁交易
+
+        #reward_buy_all = -reward_buy_all  #买不算摩擦费用，买的摩擦费用算在卖中,鼓励交易.
+
+        reward_buy_all = -reward_buy_all
+
+        reward_stock_fail = (self.stock_fail_count[0]*close[0] + self.stock_fail_count[1]*close[1])*(-1e-5)  #这个与action密切相关，noise变了，这个也变了
+
+        reward_stock_succ = (self.stock_succ_count[0]*close[0] + self.stock_succ_count[1]*close[1])*(100e-5)
+
+        #操作失误的惩罚带入状态
+        '''
+        if self.cash >= abs(reward_stock_fail):
+            self.cash += reward_stock_fail
+        elif self.cost_holds[0] >= abs(reward_stock_fail):
+            self.cost_holds[0] -= reward_stock_fail
+        elif self.cost_holds[1] >= abs(reward_stock_fail):
+            self.cost_holds[1] -= reward_stock_fail
+        else:
+            print("fuck game over")
+        '''
+
+
+        #reward = reward_sell_all + reward_buy_all + reward_stock_fail + reward_stock_succ + reward_cash_all  # - self.cost_friction - self.initial_amount*0.001       #需要减去摩擦费用，防止频繁交易
+
+        reward = reward_stock_fail + reward_stock_succ
+
+        #if self.ppp:
+            #print('stock_fail_count {0}        {1}'.format(self.stock_fail_count[0], self.stock_fail_count[1]))
+            #print('stock_succ_count {0}        {1}'.format(self.stock_succ_count[0], self.stock_succ_count[1]))
 
         #if share_buy_all + share_sell_all <= 100:                        #无操作，cash算利息，防止ai摆烂，因为买的收益为负
-            #reward += -self.cash * 1e-4                                  #不用cash试试
+        #reward += -self.cash * 1e-4                                  #不用cash试试
 
-        #把前后两天的资产差算入reward？
-
-        #repetitive = min(share_sell_all, share_buy_all)                              #重复买卖会产生摩擦成本，这就是惩罚，似乎不需要特别的惩罚.实盘的时候把重复部分消除掉就行了
-        #reward += -repetitive * (self.buy_cost_pct + self.sell_cost_pct) * avg_price
+        #在股票为空的情况下，无论怎么卖都是一样的结果
+        #在cash为空的情况下，无论怎么买都是一样的结果
 
 
         self.reward_memory.append(reward)
@@ -323,7 +365,6 @@ class StockTradingEnv(gym.Env):
             #print("sell residual earn2 = {0} \n".format(earn2))
 
             #print('mode {0} \n'.format(self.mode))
-            #print('mode {0} action_illeagl_all {1}\n'.format(self.mode, self.action_illeagl_all))
 
         '''
         penalty2 = 0
@@ -346,6 +387,11 @@ class StockTradingEnv(gym.Env):
         '''
 
         reward = reward * self.reward_scaling
+
+
+        self.stock_fail_count = [0]*self.stock_dim
+
+        self.stock_succ_count = [0]*self.stock_dim
 
         #if self.mode == 'train':
             #penalty = 1000000*action_illeagl                   #重重的惩罚
@@ -374,6 +420,13 @@ class StockTradingEnv(gym.Env):
         #action_space = self.action_space
 
 #当前第几天告诉callback，callback根据天数，修改sigma
+
+        #if reward < -500:
+            #print('fuck stock')
+
+        state = self._update_state()
+
+
         return state, reward, terminal, {'earn1':earn1}
 
 
@@ -397,6 +450,10 @@ class StockTradingEnv(gym.Env):
 
                     sell_num_shares = sell_num_shares#//100*100                                 #100倍数
 
+                    if abs(action) > self.holds[index]:                                                #不够卖
+                        self.stock_fail_count[index] += abs(sell_num_shares - abs(action))        #记录一下操作失败的股票数目
+
+                    self.stock_succ_count[index] += sell_num_shares
 
                     sell_amount = price * sell_num_shares * (1- self.sell_cost_pct)                #扣除费用，实际获得金额
                     self.cash += sell_amount                                                       #更新金额
@@ -408,6 +465,7 @@ class StockTradingEnv(gym.Env):
                     #self.cost_friction += price * sell_num_shares * self.sell_cost_pct             #更新交易摩擦费用
                     reward_sell = sell_amount - cost_avg*sell_num_shares                           #卖的收益可正可负，考虑了摩擦成本
                 else:
+                    self.stock_fail_count[index] += abs(action)                    #小心此处
                     sell_num_shares = 0
             else:
                 sell_num_shares = 0
@@ -433,6 +491,11 @@ class StockTradingEnv(gym.Env):
                 # update balance
                 buy_num_shares = min(available_amount, action)                               #实际能买的数量
                 buy_num_shares = buy_num_shares#//100*100
+
+                if abs(action) > buy_num_shares:                                                     #钱不够买
+                    self.stock_fail_count[index] += abs(buy_num_shares - abs(action))           #记录一下操作失败的股票数目
+
+                self.stock_succ_count[index] += buy_num_shares
 
                 buy_amount = price * buy_num_shares * (1 + self.buy_cost_pct)              #实际花费的金额
                 self.cash -= buy_amount                                                    #更新金额
@@ -484,6 +547,8 @@ class StockTradingEnv(gym.Env):
 
         cost_holds = np.array(self.cost_holds)/self.initial_amount
 
+        #stock_fail_count = np.array(self.stock_fail_count)/1000
+
         #order = self._get_Order()
 
         state = np.hstack(
@@ -495,6 +560,7 @@ class StockTradingEnv(gym.Env):
                 -holds,
                 close,
                 #order
+                #stock_fail_count,
             )
         )
         return state

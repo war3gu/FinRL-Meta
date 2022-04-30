@@ -72,7 +72,7 @@ class OrnsteinUhlenbeckActionNoiseSuper(OrnsteinUhlenbeckActionNoise):
 
     def __call__(self) -> np.ndarray:
         noise = super(OrnsteinUhlenbeckActionNoiseSuper, self).__call__()
-        #self._sigma *= 0.99
+        #self._sigma *= 0.5
         return noise
 
 

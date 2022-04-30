@@ -17,7 +17,7 @@ display.set_matplotlib_formats("svg")
 
 from finrl_meta import config
 from finrl_meta.data_processors.processor_tusharepro import TushareProProcessor, ReturnPlotter
-from finrl_meta.env_stock_trading.env_stocktrading_A_sinawave7 import StockTradingEnv
+from finrl_meta.env_stock_trading.env_stocktrading_A_sinawave8 import StockTradingEnv
 from drl_agents.stablebaselines3_models import DRLAgent
 
 pd.options.display.max_columns = None
@@ -157,9 +157,10 @@ if __name__ == "__main__":
     sina = sina.sort_values(['date', "tic"], ignore_index=True)
 
     train = ts_processor.data_split(sina, '2000-01-01', '2000-05-30')        #短一些，方便训练
-    trade = ts_processor.data_split(sina, '2000-05-30', '2000-07-18')
+    trade = ts_processor.data_split(sina, '2000-01-01', '2000-05-20')
+    #trade = ts_processor.data_split(sina, '2000-05-30', '2000-07-18')
 
-    train = expandTrain(train)
+    #train = expandTrain(train)
 
     #draw_results(trade, None, None)
 
@@ -167,12 +168,12 @@ if __name__ == "__main__":
     state_space = 1 + stock_dimension*6 + stock_dimension   #剩余天数， 现金,持仓*2，股价
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
 
-    total_timesteps = 400000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
+    total_timesteps = 250000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
     #total_timesteps = 2000
 
     env_kwargs_train = {
         "stock_dim": stock_dimension,
-        "hmax": 1000,
+        "hmax": 5000,
         "initial_amount": 100000,                            #多准备点金钱，让ai能够频繁买卖.训练过程中可以慢慢降低这个值
         "buy_cost_pct": 6.87e-5,
         "sell_cost_pct": 1.0687e-3,
@@ -186,13 +187,13 @@ if __name__ == "__main__":
 
     DDPG_PARAMS = {
         "batch_size": 128*2,                 #一个批次训练的样本数量
-        "buffer_size": 20000,                    #每个看1000次，需要1亿次
-        "learning_rate": 0.001,
+        "buffer_size": 300000,                    #每个看1000次，需要1亿次
+        "learning_rate": 0.00075,
         "gamma": 0.99,
         "tau": 0.005,                          #0.005
         "target_policy_noise": 0.01,
         "action_noise": "ornstein_uhlenbeck_super",
-        "gradient_steps": 200,                     # 一共训练多少个批次,1 - beta1 ** step
+        "gradient_steps": 100,                     # 一共训练多少个批次,1 - beta1 ** step
         "policy_delay": 2,                        # critic训练多少次才训练actor一次
         "train_freq": (1000, "step"),             # 采样多少次训练一次
         "learning_starts": 10000                  #这个一定要很大，因为AI的初始化输出大多是1，-1
@@ -212,7 +213,7 @@ if __name__ == "__main__":
     e_train_gym = StockTradingEnv(df=train, **env_kwargs_train)
 
     n_cores = multiprocessing.cpu_count()
-    #n_cores = 4
+    n_cores = 1
     print("core count = {0}".format(n_cores))
 
     env_train, _ = e_train_gym.get_multiproc_env(n=n_cores)
