@@ -153,24 +153,39 @@ if __name__ == "__main__":
 
     sina1 = pd.read_csv('datasets/polynomial_noise1.csv')
     sina2 = pd.read_csv('datasets/polynomial_noise2.csv')
-    #sina = sina1.append(sina2)
-    sina = sina1
-    sina = sina.sort_values(['date', "tic"], ignore_index=True)
+    #sina = sina1
+    #sina = sina.sort_values(['date', "tic"], ignore_index=True)
 
-    train = ts_processor.data_split(sina, '2000-01-01', '2000-01-05')        #短一些，方便训练
-    trade = ts_processor.data_split(sina, '2000-01-01', '2000-01-05')
-    #trade = ts_processor.data_split(sina, '2000-05-30', '2000-07-18')
+    train1 = ts_processor.data_split(sina1, '2000-01-01', '2000-01-04')        #短一些，方便训练
+    trade1 = ts_processor.data_split(sina1, '2000-01-01', '2000-01-04')
 
-    #train = expandTrain(train)
+    train2 = ts_processor.data_split(sina2, '2000-01-01', '2000-01-04')        #短一些，方便训练
+    trade2 = ts_processor.data_split(sina2, '2000-01-01', '2000-01-04')
 
-    #draw_results(trade, None, None)
+    train_path = []
+    train_path.append(train1)
+    train_path.append(train2)
+
+    trade_path = []
+    trade_path.append(trade1)
+    trade_path.append(trade2)
+
+
+
+    train = train1
+    trade = trade1
+
+
+
+
+
 
     stock_dimension = len(train.tic.unique())
     state_space = 1 + stock_dimension + stock_dimension +1  #现金,持仓，股价
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
 
     #total_timesteps = 250000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
-    total_timesteps = 500
+    total_timesteps = 2000
 
     env_kwargs_train = {
         "stock_dim": stock_dimension,
@@ -188,21 +203,21 @@ if __name__ == "__main__":
 
     DDPG_PARAMS = {
         "batch_size": 32,                          #一个批次训练的样本数量
-        "buffer_size": 512,                       #每个看1000次，需要1亿次
+        "buffer_size": 2048,                       #每个看1000次，需要1亿次
         "learning_rate": 0.001,
         "gamma": 0.99,
         "tau": 0.1,                              #0.005
         "target_policy_noise":0.0001,             #0.01,
         "action_noise": "ornstein_uhlenbeck",
         "gradient_steps": 300,                    # 一共训练多少个批次,1 - beta1 ** step
-        "policy_delay": 20,                        #2 critic训练多少次才训练actor一次
-        "train_freq": (120, "step"),                # 采样多少次训练一次
+        "policy_delay": 30,                        #2 critic训练多少次才训练actor一次
+        "train_freq": (32, "step"),                # 采样多少次训练一次
         #"train_freq": (40, "episode"),
         "learning_starts": 50                  #这个一定要很大，因为AI的初始化输出大多是1，-1
     }
 
-    actor_ratio = 5
-    critic_ratio = 5
+    actor_ratio = 10
+    critic_ratio = 10
 
     POLICY_KWARGS = dict(net_arch=dict(pi=[2*actor_ratio, 2*actor_ratio, 2*actor_ratio, 2*actor_ratio], qf=[2*actor_ratio, 2*actor_ratio, 2*actor_ratio, 2*actor_ratio]),
                      optimizer_kwargs=dict(weight_decay=0, amsgrad=False, betas=[0.95, 0.99]))
@@ -212,7 +227,7 @@ if __name__ == "__main__":
 
     print("total_timesteps = {0}".format(total_timesteps))
 
-    e_train_gym = StockTradingEnv(df=train, **env_kwargs_train)
+    e_train_gym = StockTradingEnv(paths=train_path, df=train, **env_kwargs_train)
 
     n_cores = multiprocessing.cpu_count()
     #n_cores = 1
@@ -265,7 +280,7 @@ if __name__ == "__main__":
             "cash_limit": 0.2,
             "mode":"test",
         }
-        e_trade_gym = StockTradingEnv(df=trade, **env_kwargs_test)
+        e_trade_gym = StockTradingEnv(paths=trade_path, df=trade, **env_kwargs_test)
         print("start test")
         df_account_value, df_actions = DRLAgent.DRL_prediction(model=model_ddpg_after_train, environment=e_trade_gym)
         print("end test")

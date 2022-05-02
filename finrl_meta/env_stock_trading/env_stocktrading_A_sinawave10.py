@@ -21,6 +21,7 @@ class StockTradingEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self,
+                 paths,
                  df,
                  stock_dim,
                  hmax,
@@ -33,8 +34,9 @@ class StockTradingEnv(gym.Env):
                  mode='',
                  out_of_cash_penalty=0.01,
                  cash_limit=0.1):
-
-        self.df = df                                            #数据
+        self.paths = paths                                      #所有的训练路径
+        self.path_index = 0                                     #路径索引
+        self.df = None                                          #数据
         self.stock_dim = stock_dim                              #股票数量
         self.hmax = hmax                                        #每日最大交易数量
         self.initial_amount = initial_amount                    #启动资金
@@ -56,7 +58,7 @@ class StockTradingEnv(gym.Env):
 
 
     def reset(self):
-        if self.mode == "test":           #测试结束，架构会自动执行reset，导致交易信息丢失。（此处让reset基本什么都不做，解决问题）
+        if self.mode == "test":           #test结束，架构会自动执行reset，导致交易信息丢失。（此处让reset基本什么都不做，解决问题）
             state = self._update_state()
         else:
             self.reset_part()
@@ -64,6 +66,10 @@ class StockTradingEnv(gym.Env):
         return state
 
     def reset_part(self):
+        self.path_index += 1                                    #当前训练的是哪个episode
+        self.path_index  = self.path_index % len(self.paths)
+        self.df = self.paths[self.path_index]
+
         self.day_start = 0
         self.day = self.day_start
         self.cash = self.initial_amount                         #现金.如果是train，应该根据域范围随机得到
