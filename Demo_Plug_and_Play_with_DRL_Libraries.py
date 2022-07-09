@@ -14,11 +14,11 @@
 
 
 ## install elegantrl library
-get_ipython().system('pip install git+https://github.com/AI4Finance-LLC/ElegantRL.git')
+#get_ipython().system('pip install git+https://github.com/AI4Finance-LLC/ElegantRL.git')
 ## install rllib/ray library
-get_ipython().system('pip install ray[default]')
+#get_ipython().system('pip install ray[default]')
 ## install finrl library
-get_ipython().system('pip install git+https://github.com/AI4Finance-LLC/FinRL-Library.git')
+#get_ipython().system('pip install git+https://github.com/AI4Finance-LLC/FinRL-Library.git')
 
 
 # ### 1.2 Check if the additional packages needed are present, if not install them
@@ -47,7 +47,7 @@ import pandas as pd
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-get_ipython().run_line_magic('matplotlib', 'inline')
+#get_ipython().run_line_magic('matplotlib', 'inline')
 
 # matplotlib.use('Agg')
 import datetime
@@ -495,7 +495,7 @@ perf_stats_all.to_csv("./"+"/perf_stats_all_"+now+'.csv')
 
 
 print("==============Compare to DJIA===========")
-get_ipython().run_line_magic('matplotlib', 'inline')
+#get_ipython().run_line_magic('matplotlib', 'inline')
 # S&P 500: ^GSPC
 # Dow Jones Index: ^DJI
 # NASDAQ 100: ^NDX
@@ -603,7 +603,7 @@ perf_stats_all = pd.DataFrame(perf_stats_all)
 
 
 print("==============Compare to DJIA===========")
-get_ipython().run_line_magic('matplotlib', 'inline')
+#get_ipython().run_line_magic('matplotlib', 'inline')
 # S&P 500: ^GSPC
 # Dow Jones Index: ^DJI
 # NASDAQ 100: ^NDX

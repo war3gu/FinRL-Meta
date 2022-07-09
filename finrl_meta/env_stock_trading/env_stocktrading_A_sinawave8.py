@@ -323,7 +323,7 @@ class StockTradingEnv(gym.Env):
 
         reward_stock_fail = (self.stock_fail_count[0]*close[0] + self.stock_fail_count[1]*close[1])*(-1e-5)  #这个与action密切相关，noise变了，这个也变了
 
-        reward_stock_succ = (self.stock_succ_count[0]*close[0] + self.stock_succ_count[1]*close[1])*(100e-5)
+        reward_stock_succ = (self.stock_succ_count[0]*close[0] + self.stock_succ_count[1]*close[1])*(-1e-5)
 
         #操作失误的惩罚带入状态
         '''

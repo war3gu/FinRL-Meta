@@ -149,12 +149,22 @@ class TensorboardCallback(BaseCallback):
 
 
     def _on_training_start(self) -> None:
-        print('_on_training_start in TensorboardCallback')
+        self.logger.log("train/start")
+        self.logger.dump()
+        #print('_on_training_start in TensorboardCallback')
         #learn once，change noise once
         #self.model.action_noise.sigmaBaseMultiply(0.9)       #learn的时候修改base
 
+
+    def _on_training_end(self) -> None:
+        self.logger.log("train/end")
+        self.logger.dump()
+
     def _on_step(self) -> bool:
         #try:
+
+        '''
+
         num_timesteps = self.locals['self'].num_timesteps
         learning_starts = self.locals['learning_starts']
 
@@ -172,9 +182,13 @@ class TensorboardCallback(BaseCallback):
 
         if episode_end:
             self.change_noise()
+        '''
             #为什么网络大了一点就训练不起来了？因为初始化的输出就变了，旧的sigma不再起作用
 
         self.logger.record(key="train/reward", value=self.locals["rewards"][0])
+
+        self.logger.dump()
+
         #except BaseException:
             #self.logger.record(key="train/reward", value=self.locals["reward"][0])
         return True
@@ -220,7 +234,7 @@ class DRLAgent:
         if "action_noise" in model_kwargs:
             n_actions = self.env.action_space.shape[-1]
             model_kwargs["action_noise"] = NOISE[model_kwargs["action_noise"]](
-                mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions)#, theta=100 #, dt=0.01    #theta越小干扰越大
+                mean=np.zeros(n_actions), sigma=0.2 * np.ones(n_actions)#, theta=100 #, dt=0.01    #theta越小干扰越大
             )
         print(model_kwargs)
         model = MODELS[model_name](
@@ -249,19 +263,22 @@ class DRLAgent:
         """make a prediction"""
         account_memory = []
         actions_memory = []
-        test_env.reset()
-        for i in range(len(environment.df.index.unique())):
+        #test_env.reset()
+        #通过env_method得到总长度，然后再循环
+        sl = test_env.env_method(method_name="get_step_length")
+        for i in range(sl[0]):
             action, _states = model.predict(test_obs)
             # account_memory = test_env.env_method(method_name="save_asset_memory")
             # actions_memory = test_env.env_method(method_name="save_action_memory")
             test_obs, rewards, dones, info = test_env.step(action)
-            if i == (len(environment.df.index.unique()) - 7):
-                account_memory = test_env.env_method(method_name="save_asset_memory")
-                actions_memory = test_env.env_method(method_name="save_action_memory")
-                break
+            #if i == (len(environment.df.index.unique()) - 7):
+                #break
             if dones[0]:
                 print("hit end!")
                 break
+
+        account_memory = test_env.env_method(method_name="save_asset_memory")
+        actions_memory = test_env.env_method(method_name="save_action_memory")
         return account_memory[0], actions_memory[0]
 
     @staticmethod

@@ -6,13 +6,13 @@
 # In[ ]:
 
 
-get_ipython().run_cell_magic('capture', '', '!pip install git+https://github.com/AI4Finance-Foundation/FinRL.git')
+#get_ipython().run_cell_magic('capture', '', '!pip install git+https://github.com/AI4Finance-Foundation/FinRL.git')
 
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('capture', '', '!pip3 install optuna')
+#get_ipython().run_cell_magic('capture', '', '!pip3 install optuna')
 
 
 # In[ ]:
@@ -22,7 +22,7 @@ import pandas as pd
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-get_ipython().run_line_magic('matplotlib', 'inline')
+#get_ipython().run_line_magic('matplotlib', 'inline')
 
 # matplotlib.use('Agg')
 import datetime
@@ -124,13 +124,13 @@ class Custom_DataProcessor():
 
 
 # !gdown --id "1sp11dtAJGGqC-3UdSn774ZD1zWCsqbn4"
-get_ipython().system('gdown --id "1m63ncE-BYlS77u5ejYTte9Nmh35DWhzp"')
+#get_ipython().system('gdown --id "1m63ncE-BYlS77u5ejYTte9Nmh35DWhzp"')
 
 
 # In[ ]:
 
 
-get_ipython().system('unzip "/content/Pytrends.zip"')
+#get_ipython().system('unzip "/content/Pytrends.zip"')
 
 
 # In[ ]:
