@@ -234,7 +234,7 @@ class DRLAgent:
         if "action_noise" in model_kwargs:
             n_actions = self.env.action_space.shape[-1]
             model_kwargs["action_noise"] = NOISE[model_kwargs["action_noise"]](
-                mean=np.zeros(n_actions), sigma=0.3 * np.ones(n_actions)#, theta=100 #, dt=0.01    #theta越小干扰越大
+                mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions)#, theta=100 #, dt=0.01    #theta越小干扰越大
             )
         print(model_kwargs)
         model = MODELS[model_name](
@@ -259,27 +259,30 @@ class DRLAgent:
 
     @staticmethod
     def DRL_prediction(model, environment):
-        test_env, test_obs = environment.get_sb_env()
+        test_env, _ = environment.get_sb_env()
         """make a prediction"""
-        account_memory = []
-        actions_memory = []
+        account_memory = pd.DataFrame()
+        actions_memory = pd.DataFrame()
         #test_env.reset()
         #通过env_method得到总长度，然后再循环
+        test_obs = test_env.reset()
         sl = test_env.env_method(method_name="get_step_length")
-        for i in range(sl[0]):
-            action, _states = model.predict(test_obs)
-            # account_memory = test_env.env_method(method_name="save_asset_memory")
-            # actions_memory = test_env.env_method(method_name="save_action_memory")
-            test_obs, rewards, dones, info = test_env.step(action)
-            #if i == (len(environment.df.index.unique()) - 7):
-                #break
-            if dones[0]:
-                print("hit end!")
-                break
 
-        account_memory = test_env.env_method(method_name="save_asset_memory")
-        actions_memory = test_env.env_method(method_name="save_action_memory")
-        return account_memory[0], actions_memory[0]
+        path_length = test_env.env_method(method_name="get_path_length")
+
+        for k in range(path_length[0]):
+            test_env.env_method(method_name="reset_memory")   #每个path执行一遍
+            for i in range(sl[0]):
+                action, _states = model.predict(test_obs)
+                test_obs, rewards, dones, info = test_env.step(action)
+                if dones[0]:
+                    print("hit one path end!")
+                    aaa = test_env.env_method(method_name="save_asset_memory")
+                    bbb = test_env.env_method(method_name="save_action_memory")
+                    account_memory = account_memory.append(aaa[0])
+                    actions_memory = actions_memory.append(bbb[0])
+                    break
+        return account_memory, actions_memory
 
     @staticmethod
     def DRL_prediction_load_from_file(model_name, environment, cwd):

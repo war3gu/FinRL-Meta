@@ -166,6 +166,7 @@ if __name__ == "__main__":
     train_path.append(train1)
     train_path.append(train2)
 
+
     trade_path = []
     trade_path.append(trade1)
     trade_path.append(trade2)
@@ -181,11 +182,11 @@ if __name__ == "__main__":
 
 
     stock_dimension = len(train.tic.unique())
-    state_space = 1 + stock_dimension + stock_dimension +1  #现金,持仓，股价
+    state_space = 0 + 0 + stock_dimension + stock_dimension +1  #path_index 现金,持仓，股价, day
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
 
     #total_timesteps = 250000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
-    total_timesteps = 2000
+    total_timesteps = 1000
 
     env_kwargs_train = {
         "stock_dim": stock_dimension,
@@ -203,15 +204,15 @@ if __name__ == "__main__":
 
     DDPG_PARAMS = {
         "batch_size": 32,                          #一个批次训练的样本数量
-        "buffer_size": 2048,                       #每个看1000次，需要1亿次
-        "learning_rate": 0.001,
+        "buffer_size": 2048*4,                       #每个看1000次，需要1亿次
+        "learning_rate": 0.01,
         "gamma": 0.99,
-        "tau": 0.1,                              #0.005
-        "target_policy_noise":0.0001,             #0.01,
+        "tau": 0.1,                                 #0.005
+        "target_policy_noise":0.01,                 #0.01,
         "action_noise": "ornstein_uhlenbeck",
         "gradient_steps": 300,                    # 一共训练多少个批次,1 - beta1 ** step
         "policy_delay": 30,                        #2 critic训练多少次才训练actor一次
-        "train_freq": (32, "step"),                # 采样多少次训练一次
+        "train_freq": (256, "step"),                # 采样多少次训练一次
         #"train_freq": (40, "episode"),
         "learning_starts": 50                  #这个一定要很大，因为AI的初始化输出大多是1，-1
     }
@@ -242,7 +243,7 @@ if __name__ == "__main__":
     model_ddpg_before_train = None
 
     if os.path.exists("moneyMaker_sina.model"):
-        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate': 0.00075, "gamma": 0.99, "batch_size": 8, "train_freq": (120, "step"), "gradient_steps": 200}) #必须在此处修改lr
+        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate': 0.00075, "gamma": 0.99, "batch_size": 32, "train_freq": (32, "step"), "gradient_steps": 300}) #必须在此处修改lr
         model_ddpg_before_train.set_env(env_train)
 
         #dict = model_ddpg_before_train.get_parameters()
@@ -284,8 +285,9 @@ if __name__ == "__main__":
         print("start test")
         df_account_value, df_actions = DRLAgent.DRL_prediction(model=model_ddpg_after_train, environment=e_trade_gym)
         print("end test")
-        df_actions.to_csv("action.csv", index=False)
+
         df_account_value.to_csv("account.csv", index=False)
+        df_actions.to_csv("action.csv", index=True)
 
         #把df_actions显示在图形上，与股价一起
         # #draw_results(trade, df_actions, df_account_value)

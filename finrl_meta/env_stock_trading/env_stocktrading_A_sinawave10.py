@@ -35,7 +35,7 @@ class StockTradingEnv(gym.Env):
                  out_of_cash_penalty=0.01,
                  cash_limit=0.1):
         self.paths = paths                                      #所有的训练路径
-        self.path_index = 0                                     #路径索引
+        self.path_index = -1                                     #路径索引
         self.df = None                                          #数据
         self.stock_dim = stock_dim                              #股票数量
         self.hmax = hmax                                        #每日最大交易数量
@@ -54,36 +54,40 @@ class StockTradingEnv(gym.Env):
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape = (self.state_space,))
 ####################################################################################
 
-        self.reset_part()
+    def get_path_length(self):
+        return len(self.paths)
+
+    def increase_Path_Index(self):
+        self.path_index += 1                                    #当前训练的是哪个episode
+        self.path_index  = self.path_index % len(self.paths)
 
 
     def reset(self):
-        if self.mode == "test":           #test结束，架构会自动执行reset，导致交易信息丢失。（此处让reset基本什么都不做，解决问题）
-            state = self._update_state()
-        else:
-            self.reset_part()
-            state = self._update_state()
-        return state
+        self.increase_Path_Index()
 
-    def reset_part(self):
-        self.path_index += 1                                    #当前训练的是哪个episode
-        self.path_index  = self.path_index % len(self.paths)
         self.df = self.paths[self.path_index]
-
         self.day_start = 0
         self.day = self.day_start
         self.cash = self.initial_amount                         #现金.如果是train，应该根据域范围随机得到
         self.holds = 0                                          #持仓
         #self.cost_friction = 0                                 #交易总的摩擦费用
+        #self.total_assets = 0
 
-        self.total_assets = 0
+
+        if self.mode == "test":           #test结束，架构会自动执行reset，导致交易信息丢失。（此处让reset基本什么都不做，解决问题）
+            state = self._update_state()
+        else:
+            state = self._update_state()
+        return state
+
+    def reset_memory(self):
         self.actions_memory=[]
         self.date_memory=[]
         self.asset_memory=[]
         self.cash_memory = []
         self.holds_memory = []
 
-        self.reward_memory = []
+        #self.reward_memory = []
 
         self.date_memory.append(self._get_date())
         self.asset_memory.append(self.cash)
@@ -156,13 +160,14 @@ class StockTradingEnv(gym.Env):
         #TD3的探索有问题
 
 
-        self.reward_memory.append(reward)
+        #self.reward_memory.append(reward)
 
         earn1 = None
         if terminal == True:
             earn1 = end_total_asset - self.initial_amount
             earn1 *= self.reward_scaling
             print('earn1 = {0}'.format(earn1))
+            #self.increase_Path_Index()
 
         reward = reward * self.reward_scaling
 
@@ -226,7 +231,7 @@ class StockTradingEnv(gym.Env):
         close = data.close
         total_assets = self.cash + close*self.holds
         #print('_update_total_assets')
-        self.total_assets = total_assets
+        #self.total_assets = total_assets
         return total_assets
 
     def _update_state(self):
@@ -237,12 +242,15 @@ class StockTradingEnv(gym.Env):
         data0 = self.df.loc[0, :]
         #data = self.df.loc[self.day-self.day_start:self.day, :]
         data = self.df.loc[self.day, :]
-        close = np.array(data.close)/np.array(data0.close).sum()
+        #close = np.array(data.close)/np.array(data0.close).sum()
+
+        close = data.close
 
 
         state = np.hstack(
             (
-                cash,
+                #self.path_index,
+                #cash,
                 holds,
                 close,
                 self.day
@@ -297,12 +305,12 @@ class StockTradingEnv(gym.Env):
 
     def get_sb_env(self):
         e = DummyVecEnv([lambda: self])
-        obs = e.reset()
-        return e, obs
+        #obs = e.reset()
+        return e, None
 
     def get_multiproc_env(self, n=10):
         def get_self():
             return deepcopy(self)
         e = SubprocVecEnv([get_self for _ in range(n)], start_method=None)  #Only ‘forkserver’ and ‘spawn’ start methods are thread-safe
-        obs = e.reset()
-        return e, obs
+        #obs = e.reset()
+        return e, None
