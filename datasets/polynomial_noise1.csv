@@ -1,11 +1,11 @@
 ,close,date,tic
 0,4,2000-01-01,polynomial_noise1.csv
-1,5,2000-01-02,polynomial_noise1.csv
-2,3,2000-01-03,polynomial_noise1.csv
-3,4.5,2000-01-04,polynomial_noise1.csv
-4,2,2000-01-05,polynomial_noise1.csv
-5,4,2000-01-06,polynomial_noise1.csv
-6,2,2000-01-07,polynomial_noise1.csv
+1,2,2000-01-02,polynomial_noise1.csv
+2,7,2000-01-03,polynomial_noise1.csv
+3,7,2000-01-04,polynomial_noise1.csv
+4,8,2000-01-05,polynomial_noise1.csv
+5,2,2000-01-06,polynomial_noise1.csv
+6,3,2000-01-07,polynomial_noise1.csv
 7,4,2000-01-08,polynomial_noise1.csv
 8,2,2000-01-09,polynomial_noise1.csv
 9,4,2000-01-10,polynomial_noise1.csv

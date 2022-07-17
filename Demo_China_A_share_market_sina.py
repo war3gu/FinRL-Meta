@@ -144,13 +144,7 @@ def expandTrain(train):
     print('expandTrain_end')
     return train_expand
 
-
-
-if __name__ == "__main__":
-    __spec__ = "ModuleSpec(name='builtins', loader=<class '_frozen_importlib.BuiltinImporter'>)"
-    token = '27080ec403c0218f96f388bca1b1d85329d563c91a43672239619ef5'
-    ts_processor = TushareProProcessor("tusharepro", token=token)
-
+def loadPolynomial():
     sina1 = pd.read_csv('datasets/polynomial_noise1.csv')
     sina2 = pd.read_csv('datasets/polynomial_noise2.csv')
     #sina = sina1
@@ -166,37 +160,36 @@ if __name__ == "__main__":
     train_path.append(train1)
     train_path.append(train2)
 
-
     trade_path = []
     trade_path.append(trade1)
     trade_path.append(trade2)
 
+    stock_dimension = 1              #暂时就一个，先搞定一个的
+    state_space = 3                  #持仓，股价, day
 
+    return train_path, trade_path, stock_dimension, state_space
 
-    train = train1
-    trade = trade1
+if __name__ == "__main__":
+    __spec__ = "ModuleSpec(name='builtins', loader=<class '_frozen_importlib.BuiltinImporter'>)"
+    token = '27080ec403c0218f96f388bca1b1d85329d563c91a43672239619ef5'
+    ts_processor = TushareProProcessor("tusharepro", token=token)
 
+    train_path, trade_path, stock_dimension, state_space = loadPolynomial()
 
-
-
-
-
-    stock_dimension = len(train.tic.unique())
-    state_space = 0 + 0 + stock_dimension + stock_dimension +1  #path_index 现金,持仓，股价, day
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
 
     #total_timesteps = 250000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
     total_timesteps = 1000
 
     env_kwargs_train = {
-        "stock_dim": stock_dimension,
+        #"stock_dim": stock_dimension,
         "hmax": 1000,
-        "initial_amount": 10,                      #多准备点金钱，让ai能够频繁买卖.训练过程中可以慢慢降低这个值
+        "initial_amount": 10,                          #多准备点金钱，让ai能够频繁买卖.训练过程中可以慢慢降低这个值
         "buy_cost_pct": 0,                             #6.87e-5
         "sell_cost_pct": 0,                            #1.0687e-3
         "reward_scaling": 1e-3,
         "state_space": state_space,
-        "action_space": stock_dimension,
+        "action_space": 1,                             #现在action就1个，简化问题
         "out_of_cash_penalty": 0.001,
         "cash_limit": 0.1,
         "mode":"train",                                      #根据这个来决定是训练还是交易
@@ -228,7 +221,7 @@ if __name__ == "__main__":
 
     print("total_timesteps = {0}".format(total_timesteps))
 
-    e_train_gym = StockTradingEnv(paths=train_path, df=train, **env_kwargs_train)
+    e_train_gym = StockTradingEnv(paths=train_path, **env_kwargs_train)
 
     n_cores = multiprocessing.cpu_count()
     #n_cores = 1
@@ -243,7 +236,7 @@ if __name__ == "__main__":
     model_ddpg_before_train = None
 
     if os.path.exists("moneyMaker_sina.model"):
-        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate': 0.00075, "gamma": 0.99, "batch_size": 32, "train_freq": (32, "step"), "gradient_steps": 300}) #必须在此处修改lr
+        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate': 0.00075, "gamma": 0.99, "batch_size": 32, "train_freq": (256, "step"), "gradient_steps": 300}) #必须在此处修改lr
         model_ddpg_before_train.set_env(env_train)
 
         #dict = model_ddpg_before_train.get_parameters()
@@ -269,19 +262,19 @@ if __name__ == "__main__":
         model_ddpg_after_train.save_replay_buffer("moneyMaker_replay_buffer_sina.pkl")
 
         env_kwargs_test = {
-            "stock_dim": stock_dimension,
+            #"stock_dim": stock_dimension,
             "hmax": 1000,
             "initial_amount": 10,
             "buy_cost_pct": 0,                 #6.87e-5
             "sell_cost_pct": 0,                #1.0687e-3
             "reward_scaling": 1e-3,
             "state_space": state_space,
-            "action_space": stock_dimension,
+            "action_space": 1,
             "out_of_cash_penalty": 0.001,
             "cash_limit": 0.2,
             "mode":"test",
         }
-        e_trade_gym = StockTradingEnv(paths=trade_path, df=trade, **env_kwargs_test)
+        e_trade_gym = StockTradingEnv(paths=trade_path, **env_kwargs_test)
         print("start test")
         df_account_value, df_actions = DRLAgent.DRL_prediction(model=model_ddpg_after_train, environment=e_trade_gym)
         print("end test")

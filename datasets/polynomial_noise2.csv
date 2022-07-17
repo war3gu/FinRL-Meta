@@ -1,7 +1,7 @@
 ,close,date,tic
-0,11.925,2000-01-01,polynomial_noise2.csv
-1,12.400842595937497,2000-01-02,polynomial_noise2.csv
-2,12.842731569999994,2000-01-03,polynomial_noise2.csv
+0,4,2000-01-01,polynomial_noise2.csv
+1,3,2000-01-02,polynomial_noise2.csv
+2,2,2000-01-03,polynomial_noise2.csv
 3,13.251938125312504,2000-01-04,polynomial_noise2.csv
 4,13.629706240000003,2000-01-05,polynomial_noise2.csv
 5,13.977252929687502,2000-01-06,polynomial_noise2.csv

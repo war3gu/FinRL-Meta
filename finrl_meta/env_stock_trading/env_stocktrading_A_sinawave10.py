@@ -22,8 +22,7 @@ class StockTradingEnv(gym.Env):
 
     def __init__(self,
                  paths,
-                 df,
-                 stock_dim,
+                 #stock_dim,
                  hmax,
                  initial_amount,
                  buy_cost_pct,
@@ -35,9 +34,9 @@ class StockTradingEnv(gym.Env):
                  out_of_cash_penalty=0.01,
                  cash_limit=0.1):
         self.paths = paths                                      #所有的训练路径
-        self.path_index = -1                                     #路径索引
+        self.path_index = -1                                    #路径索引
         self.df = None                                          #数据
-        self.stock_dim = stock_dim                              #股票数量
+        #self.stock_dim = stock_dim                              #股票数量
         self.hmax = hmax                                        #每日最大交易数量
         self.initial_amount = initial_amount                    #启动资金
         self.buy_cost_pct = buy_cost_pct                        #买摩擦费用
@@ -263,6 +262,7 @@ class StockTradingEnv(gym.Env):
         days_left = day_length - self.day
         return days_left
 
+    '''
     def _get_can_buy(self):
         cash_avrage = self.cash/self.stock_dim
         #stock_can_buy = [0]*self.stock_dim
@@ -272,6 +272,7 @@ class StockTradingEnv(gym.Env):
         stock_can_buy = stock_can_buy#//100*100
         #print('_get_call_buy')
         return stock_can_buy
+    '''
 
     def _get_date(self):
         data = self.df.loc[self.day, :]
