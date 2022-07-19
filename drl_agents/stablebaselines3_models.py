@@ -185,9 +185,9 @@ class TensorboardCallback(BaseCallback):
         '''
             #为什么网络大了一点就训练不起来了？因为初始化的输出就变了，旧的sigma不再起作用
 
-        self.logger.record(key="train/reward", value=self.locals["rewards"][0])
+        #self.logger.record(key="train/reward", value=self.locals["rewards"][0])
 
-        self.logger.dump()
+        #self.logger.dump()
 
         #except BaseException:
             #self.logger.record(key="train/reward", value=self.locals["reward"][0])
@@ -263,6 +263,7 @@ class DRLAgent:
         """make a prediction"""
         account_memory = pd.DataFrame()
         actions_memory = pd.DataFrame()
+        earn_memory    = []
         #test_env.reset()
         #通过env_method得到总长度，然后再循环
         test_obs = test_env.reset()
@@ -279,10 +280,12 @@ class DRLAgent:
                     print("hit one path end!")
                     aaa = test_env.env_method(method_name="save_asset_memory")
                     bbb = test_env.env_method(method_name="save_action_memory")
+                    earn = test_env.env_method(method_name="get_earn")
                     account_memory = account_memory.append(aaa[0])
                     actions_memory = actions_memory.append(bbb[0])
+                    earn_memory.append(earn[0])
                     break
-        return account_memory, actions_memory
+        return account_memory, actions_memory, earn_memory
 
     @staticmethod
     def DRL_prediction_load_from_file(model_name, environment, cwd):

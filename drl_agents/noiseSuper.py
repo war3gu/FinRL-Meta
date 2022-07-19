@@ -1,3 +1,4 @@
+import random
 
 import numpy as np
 import math
@@ -21,20 +22,27 @@ class OrnsteinUhlenbeckActionNoiseSuper(OrnsteinUhlenbeckActionNoise):
         #self._sigma_base = sigma.copy()
         #self.left = np.array([-1, -1])
         #self.right = np.array([1, 1])
-        self._sigma_value = None
-        self._theta_value = None
+        #self._sigma_value = None
+        #self._theta_value = None
         super(OrnsteinUhlenbeckActionNoiseSuper, self).__init__(mean, sigma, theta, dt, initial_noise)
 
         #self._sigma = self._sigma_value * np.ones(len(self._sigma))
 
     def reset(self) -> None:
-        super(OrnsteinUhlenbeckActionNoise, self).reset()
+        #设置initial_noise为随机值，保证能够四处探索,到达一定次数，initial_noise变回0
+        #seed = random.randint(0,40)
+        #seed = 0.5*(seed - 20)
 
-        if self._sigma_value:
-            self._sigma = self._sigma_value * np.ones(len(self._sigma))
+        #self.initial_noise = np.array([seed])
+        super(OrnsteinUhlenbeckActionNoiseSuper, self).reset()
 
-        if self._theta_value:
-            self._theta = self._theta_value
+
+
+        #if self._sigma_value:
+            #self._sigma = self._sigma_value * np.ones(len(self._sigma))
+
+        #if self._theta_value:
+            #self._theta = self._theta_value
 
         #self._sigma = self._sigma_base
         #self.noise_prev = 2 * np.random.normal(size=self._mu.shape)
@@ -54,21 +62,20 @@ class OrnsteinUhlenbeckActionNoiseSuper(OrnsteinUhlenbeckActionNoise):
         #print('sigmaMultiply _sigma ={0}'.format(self._sigma))
 
     def setSigma(self, value):
-        self._sigma_value = value
-        self._sigma = self._sigma_value * np.ones(len(self._sigma))
+        print('setSigma')
+        #self._sigma_value = value
+        #self._sigma = self._sigma_value * np.ones(len(self._sigma))
+
 
     def getSigma(self) -> float:
-        return self._sigma_value
+        #return self._sigma_value
+        return None
 
     def setTheta(self, value):
-        self._theta_value = value
-        self._theta = self._theta_value
+        print('setTheta')
+        #self._theta_value = value
+        #self._theta = self._theta_value
 
-    #  0.5 *
-
-    #def setLeftRight(self, left, right) -> None:
-        #self.left = left
-        #self.right = right
 
     def __call__(self) -> np.ndarray:
         noise = super(OrnsteinUhlenbeckActionNoiseSuper, self).__call__()

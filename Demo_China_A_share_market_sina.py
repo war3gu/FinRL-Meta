@@ -5,7 +5,7 @@
 # ## Quantitative trading in China A stock market with FinRL
 
 # ### Import modules
-
+import datetime
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -169,12 +169,41 @@ def loadPolynomial():
 
     return train_path, trade_path, stock_dimension, state_space
 
+def loadStock():
+    stock = pd.read_csv('datasets/norm_week_000001.sz.csv')  #reshape会导致列名丢失，直接6个一组取值吧,暂时只取close，全部处理完再分割
+
+    stock = stock.rename(columns={'trade_date':'date'})
+
+    begin = 0
+    end = stock.shape[0]
+
+    df_list_ret = []
+
+    for index in range(begin, end, 5):
+        #print(index)
+        df_one = stock.iloc[index:index+5]
+        df_list_ret.append(df_one)
+
+
+    lll = len(df_list_ret)
+
+    train_path = df_list_ret[0:100]
+    trade_path = df_list_ret[0:100]
+
+    stock_dimension = 1
+    state_space = 3
+
+    return train_path, trade_path, stock_dimension, state_space
+
+
 if __name__ == "__main__":
     __spec__ = "ModuleSpec(name='builtins', loader=<class '_frozen_importlib.BuiltinImporter'>)"
     token = '27080ec403c0218f96f388bca1b1d85329d563c91a43672239619ef5'
     ts_processor = TushareProProcessor("tusharepro", token=token)
 
-    train_path, trade_path, stock_dimension, state_space = loadPolynomial()
+    train_path, trade_path, stock_dimension, state_space = loadStock()
+
+    #train_path, trade_path, stock_dimension, state_space = loadPolynomial()
 
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
 
@@ -196,24 +225,24 @@ if __name__ == "__main__":
     }
 
     DDPG_PARAMS = {
-        "batch_size": 32,                          #一个批次训练的样本数量
-        "buffer_size": 2048*4,                       #每个看1000次，需要1亿次
-        "learning_rate": 0.01,
+        "batch_size": 64,                            #一个批次训练的样本数量
+        "buffer_size": 512*4,                       #每个看1000次，需要1亿次
+        "learning_rate": 0.001,
         "gamma": 0.99,
-        "tau": 0.1,                                 #0.005
-        "target_policy_noise":0.01,                 #0.01,
-        "action_noise": "ornstein_uhlenbeck",
-        "gradient_steps": 300,                    # 一共训练多少个批次,1 - beta1 ** step
-        "policy_delay": 30,                        #2 critic训练多少次才训练actor一次
-        "train_freq": (256, "step"),                # 采样多少次训练一次
+        "tau": 0.1,                                  #0.005
+        "target_policy_noise":0.01,                  #0.01,
+        "action_noise": "ornstein_uhlenbeck_super",
+        "gradient_steps": 500,                      # 一共训练多少个批次,1 - beta1 ** step
+        "policy_delay": 2,                           #2 critic训练多少次才训练actor一次
+        "train_freq": (512, "step"),                # 采样多少次训练一次
         #"train_freq": (40, "episode"),
-        "learning_starts": 50                  #这个一定要很大，因为AI的初始化输出大多是1，-1
+        "learning_starts": 50                      #这个一定要很大，因为AI的初始化输出大多是1，-1
     }
 
-    actor_ratio = 10
-    critic_ratio = 10
+    actor_ratio  = 20
+    critic_ratio = 40
 
-    POLICY_KWARGS = dict(net_arch=dict(pi=[2*actor_ratio, 2*actor_ratio, 2*actor_ratio, 2*actor_ratio], qf=[2*actor_ratio, 2*actor_ratio, 2*actor_ratio, 2*actor_ratio]),
+    POLICY_KWARGS = dict(net_arch=dict(pi=[2*actor_ratio, 2*actor_ratio, 2*actor_ratio, 2*actor_ratio], qf=[2*critic_ratio, 2*critic_ratio, 2*critic_ratio, 2*critic_ratio]),
                      optimizer_kwargs=dict(weight_decay=0, amsgrad=False, betas=[0.95, 0.99]))
 
     #POLICY_KWARGS = dict(net_arch=dict(pi=[128*actor_ratio, 512*actor_ratio, 512*actor_ratio, 512*actor_ratio, 128*actor_ratio], qf=[128*critic_ratio, 512*critic_ratio, 512*critic_ratio, 512*critic_ratio, 128*critic_ratio]),
@@ -236,7 +265,7 @@ if __name__ == "__main__":
     model_ddpg_before_train = None
 
     if os.path.exists("moneyMaker_sina.model"):
-        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate': 0.00075, "gamma": 0.99, "batch_size": 32, "train_freq": (256, "step"), "gradient_steps": 300}) #必须在此处修改lr
+        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate': 0.001, "gamma": 0.99, "batch_size": 64, "train_freq": (2048, "step"), "gradient_steps": 1000}) #必须在此处修改lr
         model_ddpg_before_train.set_env(env_train)
 
         #dict = model_ddpg_before_train.get_parameters()
@@ -254,6 +283,7 @@ if __name__ == "__main__":
 
         summary(model_ddpg_before_train.actor, input_size=(1, 1, state_space), batch_size=-1)
 
+    df_result = pd.DataFrame()
     for i in range(20000):
         print("start train")
         model_ddpg_after_train = agent.train_model(model=model_ddpg_before_train, tb_log_name='td3',total_timesteps=total_timesteps)
@@ -276,11 +306,20 @@ if __name__ == "__main__":
         }
         e_trade_gym = StockTradingEnv(paths=trade_path, **env_kwargs_test)
         print("start test")
-        df_account_value, df_actions = DRLAgent.DRL_prediction(model=model_ddpg_after_train, environment=e_trade_gym)
+        df_account_value, df_actions, earn_memory = DRLAgent.DRL_prediction(model=model_ddpg_after_train, environment=e_trade_gym)
         print("end test")
 
         df_account_value.to_csv("account.csv", index=False)
         df_actions.to_csv("action.csv", index=True)
+
+
+        #网络大了，很容易收敛，但是收敛的结果是一直买
+        mean = np.mean(earn_memory)
+        std  = np.std(earn_memory)
+        mem_one = { 'mean':mean, 'std':std, 'earn':earn_memory}  #sum,mean需要把历史的也记录下来,还要记录数据的方差
+        sr = pd.Series(mem_one)
+        df_result = df_result.append(sr, ignore_index=True)
+        df_result.to_csv("a_trade_result.csv", index=False)
 
         #把df_actions显示在图形上，与股价一起
         # #draw_results(trade, df_actions, df_account_value)

@@ -115,8 +115,6 @@ class StockTradingEnv(gym.Env):
 
         begin_total_asset = self._update_total_assets()
 
-        #data = self.df.loc[self.day, :]
-        #data = data.reset_index(drop=True)
 
         actions_old = actions.copy()
 
@@ -177,12 +175,12 @@ class StockTradingEnv(gym.Env):
 
     def _sell_stock(self, index, action):
         def _do_sell_normal():
-            data = self.df.loc[self.day, :]
+            data = self.df.iloc[self.day]
             #data = data.reset_index(drop=True)
-            close = data.close
+            close = data.z_close
             price = close
             sell_num_shares = 0
-            if price > 0:                                                                      #价格大于0
+            if True:                                                                      #价格大于0
                 sell_num_shares    = abs(action)                                               #可以卖空，正数
                 sell_amount        = price * sell_num_shares * (1- self.sell_cost_pct)         #扣除费用，实际获得金额
                 self.cash         += sell_amount                                               #更新金额
@@ -199,12 +197,12 @@ class StockTradingEnv(gym.Env):
     def _buy_stock(self, index, action):
 
         def _do_buy():
-            data = self.df.loc[self.day, :]
+            data = self.df.iloc[self.day]
             #data = data.reset_index(drop=True)
-            close = data.close
+            close = data.z_close
             price = close
 
-            if price > 0:                                                                      #股票价格大于0
+            if True:                                                                      #股票价格大于0
                 buy_num_shares     = action                                                    #可以买空，正数
                 buy_amount         = price * buy_num_shares * (1 + self.buy_cost_pct)          #实际花费的金额
                 self.cash         -= buy_amount                                                #更新金额，可能为负数
@@ -218,16 +216,10 @@ class StockTradingEnv(gym.Env):
 
         return buy_num_shares
 
-    def _get_Order(self):
-        total_assets = self._update_total_assets()
-        if self.cash > total_assets*0.5:
-            return 0
-        else:
-            return 1
 
     def _update_total_assets(self):
-        data = self.df.loc[self.day, :]
-        close = data.close
+        data = self.df.iloc[self.day]
+        close = data.z_close
         total_assets = self.cash + close*self.holds
         #print('_update_total_assets')
         #self.total_assets = total_assets
@@ -238,13 +230,17 @@ class StockTradingEnv(gym.Env):
 
         holds = np.array(self.holds)/1000
 
-        data0 = self.df.loc[0, :]
-        #data = self.df.loc[self.day-self.day_start:self.day, :]
-        data = self.df.loc[self.day, :]
+        data = self.df.iloc[0]
         #close = np.array(data.close)/np.array(data0.close).sum()
 
-        close = data.close
+        close = data.z_close
+        open  = data.open
+        high  = data.high
+        low   = data.low
 
+        z_close = data.z_close
+
+        #print('path_index = {0}'.format(self.path_index))
 
         state = np.hstack(
             (
@@ -252,6 +248,9 @@ class StockTradingEnv(gym.Env):
                 #cash,
                 holds,
                 close,
+                #open,
+                #high,
+                #low,
                 self.day
             )
         )
@@ -275,10 +274,14 @@ class StockTradingEnv(gym.Env):
     '''
 
     def _get_date(self):
-        data = self.df.loc[self.day, :]
+        data = self.df.iloc[self.day]
         #date = data.date.unique()[0]
         date = data.date
         return date
+
+    def get_earn(self):
+        total_assets = self.asset_memory[-1]
+        return total_assets - self.initial_amount
 
     def get_step_length(self):
         lll = len(self.df.index.unique())
