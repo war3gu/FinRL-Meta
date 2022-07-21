@@ -30,8 +30,8 @@ class OrnsteinUhlenbeckActionNoiseSuper(OrnsteinUhlenbeckActionNoise):
 
     def reset(self) -> None:
         #设置initial_noise为随机值，保证能够四处探索,到达一定次数，initial_noise变回0
-        #seed = random.randint(0,40)
-        #seed = 0.5*(seed - 20)
+        #seed = random.randint(0,20)
+        #seed = 0.1*(seed - 10)
 
         #self.initial_noise = np.array([seed])
         super(OrnsteinUhlenbeckActionNoiseSuper, self).reset()

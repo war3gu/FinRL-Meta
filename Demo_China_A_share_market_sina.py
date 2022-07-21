@@ -187,11 +187,17 @@ def loadStock():
 
     lll = len(df_list_ret)
 
-    train_path = df_list_ret[0:100]
-    trade_path = df_list_ret[0:100]
+    train_path = df_list_ret[13:14]
+    trade_path = df_list_ret[13:14]
+
+    for item in train_path:
+        print('  {0}'.format(item.close))
+
+#open,high,low,close,pre_close,change,pct_chg,vol,amount,
+
 
     stock_dimension = 1
-    state_space = 3
+    state_space = 8            #hold,open,high,low,close,vol,amount,day
 
     return train_path, trade_path, stock_dimension, state_space
 
@@ -208,7 +214,7 @@ if __name__ == "__main__":
     print(f"Stock Dimension: {stock_dimension}, State Space: {state_space}")
 
     #total_timesteps = 250000  # 总的采样次数,不能太少。一局1000天，相当于玩了1000局，有点少
-    total_timesteps = 1000
+    total_timesteps = 64*4
 
     env_kwargs_train = {
         #"stock_dim": stock_dimension,
@@ -225,25 +231,25 @@ if __name__ == "__main__":
     }
 
     DDPG_PARAMS = {
-        "batch_size": 64,                            #一个批次训练的样本数量
-        "buffer_size": 512*4,                       #每个看1000次，需要1亿次
-        "learning_rate": 0.001,
+        "batch_size": 16,                              #一个批次训练的样本数量
+        "buffer_size":64*4,                            #每个看1000次，需要1亿次
+        "learning_rate": 0.0001,
         "gamma": 0.99,
-        "tau": 0.1,                                  #0.005
-        "target_policy_noise":0.01,                  #0.01,
+        "tau": 0.005,                                      #0.005
+        "target_policy_noise":0.01,                     #0.01,
         "action_noise": "ornstein_uhlenbeck_super",
-        "gradient_steps": 500,                      # 一共训练多少个批次,1 - beta1 ** step
-        "policy_delay": 2,                           #2 critic训练多少次才训练actor一次
-        "train_freq": (512, "step"),                # 采样多少次训练一次
+        "gradient_steps": 90,                          # 一共训练多少个批次,1 - beta1 ** step
+        "policy_delay": 2,                             #2 critic训练多少次才训练actor一次
+        "train_freq": (64, "step"),                    # 采样多少次训练一次
         #"train_freq": (40, "episode"),
-        "learning_starts": 50                      #这个一定要很大，因为AI的初始化输出大多是1，-1
+        "learning_starts": 20                          #这个一定要很大，因为AI的初始化输出大多是1，-1
     }
 
-    actor_ratio  = 20
-    critic_ratio = 40
+    actor_ratio  = 25
+    critic_ratio = 25
 
-    POLICY_KWARGS = dict(net_arch=dict(pi=[2*actor_ratio, 2*actor_ratio, 2*actor_ratio, 2*actor_ratio], qf=[2*critic_ratio, 2*critic_ratio, 2*critic_ratio, 2*critic_ratio]),
-                     optimizer_kwargs=dict(weight_decay=0, amsgrad=False, betas=[0.95, 0.99]))
+    POLICY_KWARGS = dict(net_arch=dict(pi=[2*actor_ratio, 2*actor_ratio, 2*actor_ratio, 2*actor_ratio,2*actor_ratio, 2*actor_ratio, 2*actor_ratio, 2*actor_ratio], qf=[2*critic_ratio, 2*critic_ratio, 2*critic_ratio, 2*critic_ratio, 2*critic_ratio, 2*critic_ratio, 2*critic_ratio, 2*critic_ratio]),
+                         share_features_extractor=True, optimizer_kwargs=dict(weight_decay=0, amsgrad=False, betas=[0.95, 0.99]))
 
     #POLICY_KWARGS = dict(net_arch=dict(pi=[128*actor_ratio, 512*actor_ratio, 512*actor_ratio, 512*actor_ratio, 128*actor_ratio], qf=[128*critic_ratio, 512*critic_ratio, 512*critic_ratio, 512*critic_ratio, 128*critic_ratio]),
                          #optimizer_kwargs=dict(weight_decay=0, amsgrad=False, betas=[0.95, 0.99]))
@@ -265,7 +271,7 @@ if __name__ == "__main__":
     model_ddpg_before_train = None
 
     if os.path.exists("moneyMaker_sina.model"):
-        model_ddpg_before_train = TD3.load("moneyMaker_sina.model", custom_objects={'learning_rate': 0.001, "gamma": 0.99, "batch_size": 64, "train_freq": (2048, "step"), "gradient_steps": 1000}) #必须在此处修改lr
+        model_ddpg_before_train = TD3.load("moneyMaker_sina.model")#, custom_objects={'learning_rate': 0.001, "gamma": 0.99, "batch_size": 64, "train_freq": (2048, "step"), "gradient_steps": 1000}) #必须在此处修改lr
         model_ddpg_before_train.set_env(env_train)
 
         #dict = model_ddpg_before_train.get_parameters()

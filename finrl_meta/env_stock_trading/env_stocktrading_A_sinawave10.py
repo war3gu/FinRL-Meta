@@ -58,6 +58,7 @@ class StockTradingEnv(gym.Env):
 
     def increase_Path_Index(self):
         self.path_index += 1                                    #当前训练的是哪个episode
+        #self.path_index = random.randint(0, 1)
         self.path_index  = self.path_index % len(self.paths)
 
 
@@ -177,7 +178,7 @@ class StockTradingEnv(gym.Env):
         def _do_sell_normal():
             data = self.df.iloc[self.day]
             #data = data.reset_index(drop=True)
-            close = data.z_close
+            close = data.close
             price = close
             sell_num_shares = 0
             if True:                                                                      #价格大于0
@@ -199,7 +200,7 @@ class StockTradingEnv(gym.Env):
         def _do_buy():
             data = self.df.iloc[self.day]
             #data = data.reset_index(drop=True)
-            close = data.z_close
+            close = data.close
             price = close
 
             if True:                                                                      #股票价格大于0
@@ -219,7 +220,7 @@ class StockTradingEnv(gym.Env):
 
     def _update_total_assets(self):
         data = self.df.iloc[self.day]
-        close = data.z_close
+        close = data.close
         total_assets = self.cash + close*self.holds
         #print('_update_total_assets')
         #self.total_assets = total_assets
@@ -230,27 +231,35 @@ class StockTradingEnv(gym.Env):
 
         holds = np.array(self.holds)/1000
 
-        data = self.df.iloc[0]
+        #index = self.df.index.start + self.day
+
+        data = self.df.iloc[self.day]
         #close = np.array(data.close)/np.array(data0.close).sum()
 
-        close = data.z_close
+
         open  = data.open
         high  = data.high
         low   = data.low
+        close = data.close
+        vol   = data.vol
+        amount= data.amount
 
-        z_close = data.z_close
+        #z_close = data.z_close
 
         #print('path_index = {0}'.format(self.path_index))
 
+        #hold,open,high,low,close,vol,amount,day
         state = np.hstack(
             (
                 #self.path_index,
                 #cash,
                 holds,
+                open,
+                high,
+                low,
                 close,
-                #open,
-                #high,
-                #low,
+                vol,
+                amount,
                 self.day
             )
         )
